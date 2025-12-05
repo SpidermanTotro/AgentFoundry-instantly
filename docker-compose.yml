@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  copilot-pro:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: copilot-pro:latest
+    container_name: copilot-pro
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - HOST=0.0.0.0
+    volumes:
+      # Persist SQLite database and learned skills
+      - copilot-data:/app/data
+      - copilot-skills:/app/server/ai-engine
+    networks:
+      - copilot-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); });"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # Optional: nginx reverse proxy for HTTPS
+  nginx:
+    image: nginx:alpine
+    container_name: copilot-pro-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - copilot-pro
+    networks:
+      - copilot-network
+    profiles:
+      - with-proxy
+
+volumes:
+  copilot-data:
+    driver: local
+  copilot-skills:
+    driver: local
+
+networks:
+  copilot-network:
+    driver: bridge
