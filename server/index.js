@@ -12,6 +12,7 @@ const LocalAIEngine = require('./ai-engine/LocalAIEngine');
 const PluginSystem = require('./ai-engine/PluginSystem');
 const CodeIntelligence = require('./ai-engine/CodeIntelligence');
 const CompleteGenSparkAI = require('./ai-engine/CompleteGenSparkAI');
+const OfflineGenSparkAI = require('./ai-engine/OfflineGenSparkAI');
 
 dotenv.config();
 
@@ -23,6 +24,7 @@ const aiEngine = new LocalAIEngine();
 const pluginSystem = new PluginSystem();
 const codeIntelligence = new CodeIntelligence();
 const gensparkAI = new CompleteGenSparkAI();
+const offlineAI = new OfflineGenSparkAI();
 
 // Initialize COMPLETE GenSpark AI with ALL API keys
 (async () => {
@@ -35,6 +37,16 @@ const gensparkAI = new CompleteGenSparkAI();
   });
   console.log('✅ COMPLETE GenSpark AI Suite initialized');
   console.log('📦 All Features: Image Gen, Video Gen, Audio Gen, Web Search, Document AI');
+})();
+
+// Initialize OFFLINE GenSpark AI (100% Offline Mode)
+(async () => {
+  await offlineAI.initialize({
+    devMode: process.env.DEV_MODE === 'true' || process.env.NODE_ENV === 'development'
+  });
+  console.log('✅ OFFLINE GenSpark AI Suite initialized');
+  console.log('🔒 100% Offline - No Internet Required');
+  console.log('🔧 Dev Mode:', offlineAI.devMode ? 'ENABLED' : 'DISABLED');
 })();
 
 // Middleware
@@ -552,6 +564,194 @@ app.get('/api/genspark-stats', async (req, res) => {
       ...stats,
       message: 'Complete GenSpark AI Suite - All Features Available'
     });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ==================== OFFLINE GENSPARK AI ENDPOINTS ====================
+
+// 🎨 OFFLINE IMAGE GENERATION
+app.post('/api/offline/generate-image', async (req, res) => {
+  try {
+    const { prompt, width, height, style, complexity } = req.body;
+    const result = await offlineAI.generateImage(prompt, { width, height, style, complexity });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 🔍 OFFLINE IMAGE ANALYSIS
+app.post('/api/offline/analyze-image', async (req, res) => {
+  try {
+    const { imageData, prompt } = req.body;
+    const result = await offlineAI.analyzeImage(imageData, prompt);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 🎬 OFFLINE VIDEO GENERATION
+app.post('/api/offline/generate-video', async (req, res) => {
+  try {
+    const { prompt, duration, fps, width, height } = req.body;
+    const result = await offlineAI.generateVideo(prompt, { duration, fps, width, height });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 🎵 OFFLINE AUDIO GENERATION
+app.post('/api/offline/generate-audio', async (req, res) => {
+  try {
+    const { text, rate, pitch, volume } = req.body;
+    const result = await offlineAI.generateAudio(text, { rate, pitch, volume });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 🎼 OFFLINE MUSIC GENERATION
+app.post('/api/offline/generate-music', async (req, res) => {
+  try {
+    const { prompt, duration, genre, tempo } = req.body;
+    const result = await offlineAI.generateMusic(prompt, { duration, genre, tempo });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 🔍 OFFLINE WEB SEARCH
+app.post('/api/offline/search', async (req, res) => {
+  try {
+    const { query, limit } = req.body;
+    const result = await offlineAI.searchWeb(query, { limit });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 📄 OFFLINE DOCUMENT PROCESSING
+app.post('/api/offline/process-document', async (req, res) => {
+  try {
+    const { content, type } = req.body;
+    const result = await offlineAI.processDocument(content, type);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 💬 OFFLINE TEXT GENERATION
+app.post('/api/offline/generate-text', async (req, res) => {
+  try {
+    const { prompt, maxLength, temperature } = req.body;
+    const result = await offlineAI.generateText(prompt, { maxLength, temperature });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 📊 OFFLINE AI STATS
+app.get('/api/offline/stats', async (req, res) => {
+  try {
+    const stats = await offlineAI.getStats();
+    res.json({
+      success: true,
+      ...stats
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ==================== DEV MODE ENDPOINTS ====================
+
+// 🔧 DEV MODE: Execute command
+app.post('/api/dev/execute', async (req, res) => {
+  try {
+    const { command, params } = req.body;
+    const result = await offlineAI.executeDevCommand(command, params);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 🔧 DEV MODE: Inspect cache
+app.get('/api/dev/cache', async (req, res) => {
+  try {
+    const result = await offlineAI.executeDevCommand('inspect-cache');
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 🔧 DEV MODE: Performance analysis
+app.get('/api/dev/performance', async (req, res) => {
+  try {
+    const result = await offlineAI.executeDevCommand('analyze-performance');
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 🔧 DEV MODE: Generate report
+app.get('/api/dev/report', async (req, res) => {
+  try {
+    const result = await offlineAI.executeDevCommand('generate-report');
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 🔧 DEV MODE: Run benchmarks
+app.post('/api/dev/benchmark', async (req, res) => {
+  try {
+    const { operation } = req.body;
+    const result = await offlineAI.executeDevCommand('benchmark', { operation: operation || 'all' });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 🔧 DEV MODE: Memory usage
+app.get('/api/dev/memory', async (req, res) => {
+  try {
+    const result = await offlineAI.executeDevCommand('memory-usage');
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 🔧 DEV MODE: Test feature
+app.post('/api/dev/test', async (req, res) => {
+  try {
+    const { feature } = req.body;
+    const result = await offlineAI.executeDevCommand('test-feature', { feature });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 🔧 DEV MODE: Export knowledge base
+app.get('/api/dev/knowledge', async (req, res) => {
+  try {
+    const result = await offlineAI.executeDevCommand('export-knowledge');
+    res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
