@@ -13,6 +13,7 @@ const PluginSystem = require('./ai-engine/PluginSystem');
 const CodeIntelligence = require('./ai-engine/CodeIntelligence');
 const CompleteGenSparkAI = require('./ai-engine/CompleteGenSparkAI');
 const OfflineGenSparkAI = require('./ai-engine/OfflineGenSparkAI');
+const ChatGPT2_Unrestricted = require('./ai-engine/ChatGPT2_Unrestricted');
 
 dotenv.config();
 
@@ -25,6 +26,7 @@ const pluginSystem = new PluginSystem();
 const codeIntelligence = new CodeIntelligence();
 const gensparkAI = new CompleteGenSparkAI();
 const offlineAI = new OfflineGenSparkAI();
+const chatGPT2 = new ChatGPT2_Unrestricted();
 
 // Initialize COMPLETE GenSpark AI with ALL API keys
 (async () => {
@@ -47,6 +49,28 @@ const offlineAI = new OfflineGenSparkAI();
   console.log('✅ OFFLINE GenSpark AI Suite initialized');
   console.log('🔒 100% Offline - No Internet Required');
   console.log('🔧 Dev Mode:', offlineAI.devMode ? 'ENABLED' : 'DISABLED');
+})();
+
+// Initialize ChatGPT 2.0 UNRESTRICTED
+(async () => {
+  const { GoogleGenerativeAI } = require('@google/generative-ai');
+  const Anthropic = require('@anthropic-ai/sdk');
+  
+  const aiProviders = {};
+  if (process.env.GOOGLE_API_KEY) {
+    aiProviders.gemini = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+  }
+  if (process.env.ANTHROPIC_API_KEY) {
+    aiProviders.claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  }
+
+  await chatGPT2.initialize({
+    githubToken: process.env.GITHUB_TOKEN,
+    aiProviders
+  });
+  console.log('✅ ChatGPT 2.0 UNRESTRICTED initialized');
+  console.log('🔓 ALL RESTRICTIONS REMOVED');
+  console.log('💬 Chat, Browse Web, GitHub, Files, Code Execution');
 })();
 
 // Middleware
@@ -751,6 +775,182 @@ app.post('/api/dev/test', async (req, res) => {
 app.get('/api/dev/knowledge', async (req, res) => {
   try {
     const result = await offlineAI.executeDevCommand('export-knowledge');
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ==================== CHATGPT 2.0 UNRESTRICTED ENDPOINTS ====================
+
+// 💬 CHAT COMPLETION (Unrestricted)
+app.post('/api/chatgpt/chat', async (req, res) => {
+  try {
+    const { message, personality, contextLength, unrestricted } = req.body;
+    const result = await chatGPT2.chat(message, { personality, contextLength, unrestricted });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 🌐 REAL-TIME WEB BROWSING (ChatGPT Can't Do This)
+app.post('/api/chatgpt/browse', async (req, res) => {
+  try {
+    const { url } = req.body;
+    const result = await chatGPT2.browseWeb(url);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 🔍 REAL-TIME WEB SEARCH (ChatGPT Has Limited Access)
+app.post('/api/chatgpt/search-realtime', async (req, res) => {
+  try {
+    const { query } = req.body;
+    const result = await chatGPT2.searchWebRealtime(query);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 📦 GITHUB: List Repositories (ChatGPT Can't Do This)
+app.post('/api/chatgpt/github/repos', async (req, res) => {
+  try {
+    const { username } = req.body;
+    const result = await chatGPT2.githubListRepos(username);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 🐛 GITHUB: Create Issue (ChatGPT Can't Do This)
+app.post('/api/chatgpt/github/issue', async (req, res) => {
+  try {
+    const { owner, repo, title, body } = req.body;
+    const result = await chatGPT2.githubCreateIssue(owner, repo, title, body);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 🔀 GITHUB: Create Pull Request (ChatGPT Can't Do This)
+app.post('/api/chatgpt/github/pr', async (req, res) => {
+  try {
+    const { owner, repo, title, head, base, body } = req.body;
+    const result = await chatGPT2.githubCreatePR(owner, repo, title, head, base, body);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 📂 FILE SYSTEM: Read File (ChatGPT Can't Do This)
+app.post('/api/chatgpt/fs/read', async (req, res) => {
+  try {
+    const { path } = req.body;
+    const result = await chatGPT2.readLocalFile(path);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ✍️ FILE SYSTEM: Write File (ChatGPT Can't Do This)
+app.post('/api/chatgpt/fs/write', async (req, res) => {
+  try {
+    const { path, content } = req.body;
+    const result = await chatGPT2.writeLocalFile(path, content);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 📁 FILE SYSTEM: List Directory (ChatGPT Can't Do This)
+app.post('/api/chatgpt/fs/list', async (req, res) => {
+  try {
+    const { path } = req.body;
+    const result = await chatGPT2.listDirectory(path);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 💻 CODE EXECUTION (ChatGPT Has Limited Sandbox)
+app.post('/api/chatgpt/execute', async (req, res) => {
+  try {
+    const { code, language } = req.body;
+    const result = await chatGPT2.executeCode(code, language);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 🧠 MEMORY: Save (ChatGPT Loses Memory)
+app.post('/api/chatgpt/memory/save', async (req, res) => {
+  try {
+    const { key, value, category } = req.body;
+    const result = await chatGPT2.saveToMemory(key, value, category);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 🧠 MEMORY: Get (ChatGPT Loses Memory)
+app.post('/api/chatgpt/memory/get', async (req, res) => {
+  try {
+    const { key } = req.body;
+    const result = await chatGPT2.getFromMemory(key);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 🧠 MEMORY: Get All (ChatGPT Loses Memory)
+app.get('/api/chatgpt/memory/all', async (req, res) => {
+  try {
+    const { category } = req.query;
+    const result = await chatGPT2.getAllMemories(category);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 🎭 PERSONALITY: Set (ChatGPT Has One Mode)
+app.post('/api/chatgpt/personality', async (req, res) => {
+  try {
+    const { personality } = req.body;
+    const result = await chatGPT2.setPersonality(personality);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 🗑️ CLEAR HISTORY
+app.post('/api/chatgpt/clear', async (req, res) => {
+  try {
+    const result = await chatGPT2.clearHistory();
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 📊 CHATGPT 2.0 STATS
+app.get('/api/chatgpt/stats', async (req, res) => {
+  try {
+    const result = await chatGPT2.getStats();
     res.json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
