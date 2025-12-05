@@ -58,45 +58,22 @@
         ]
       }
     ],
+    "asarUnpack": [
+      "node_modules/better-sqlite3/**/*",
+      "node_modules/@tensorflow/**/*"
+    ],
+    "npmRebuild": false,
     "linux": {
       "target": [
-        {
-          "target": "AppImage",
-          "arch": [
-            "x64",
-            "arm64"
-          ]
-        },
-        {
-          "target": "deb",
-          "arch": [
-            "x64",
-            "arm64"
-          ]
-        },
-        {
-          "target": "rpm",
-          "arch": [
-            "x64",
-            "arm64"
-          ]
-        },
-        {
-          "target": "tar.gz",
-          "arch": [
-            "x64",
-            "arm64"
-          ]
-        }
+        "AppImage",
+        "deb"
       ],
       "category": "Development",
       "icon": "public/icon.png",
-      "desktop": {
-        "Name": "Copilot Pro",
-        "Comment": "Advanced Offline AI Coding Assistant",
-        "Categories": "Development;IDE;",
-        "Keywords": "code;programming;ai;copilot;"
-      }
+      "maintainer": "Copilot Pro Team <support@copilotpro.dev>",
+      "vendor": "Copilot Pro",
+      "synopsis": "Advanced Offline AI Coding Assistant",
+      "description": "ChatGPT 2.0 UNRESTRICTED - Professional-grade AI coding assistant with zero restrictions. Features include unlimited chat, web browsing, multi-modal AI (image/video/audio generation), code execution, file system access, and complete offline mode."
     },
     "win": {
       "target": [

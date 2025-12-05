@@ -8,7 +8,7 @@ import {
   FaPaperPlane, FaImage, FaVideo, FaMusic, FaFile, FaSearch, 
   FaMicrophone, FaStop, FaDownload, FaTrash, FaSun, FaMoon,
   FaCog, FaPlus, FaHistory, FaRobot, FaCode, FaLightbulb,
-  FaEdit, FaMerge, FaUpload, FaFileExport
+  FaEdit, FaCodeBranch, FaUpload, FaFileExport
 } from 'react-icons/fa';
 import conversationManager from '../utils/ConversationManager';
 import './ChatGPT2.css';
@@ -601,7 +601,7 @@ I'm your ultimate AI assistant with **ZERO RESTRICTIONS** and **ALL FEATURES**:
                 onClick={() => setShowMergeModal(!showMergeModal)}
                 title="Merge conversations"
               >
-                <FaMerge />
+                <FaCodeBranch />
               </button>
               <button 
                 className="sidebar-action-btn"
@@ -688,7 +688,7 @@ I'm your ultimate AI assistant with **ZERO RESTRICTIONS** and **ALL FEATURES**:
                 onClick={mergeSelectedConversations}
                 disabled={selectedConvs.length < 2}
               >
-                <FaMerge /> Merge {selectedConvs.length} Selected
+                <FaCodeBranch /> Merge {selectedConvs.length} Selected
               </button>
               <button 
                 className="cancel-btn"
