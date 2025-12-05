@@ -226,17 +226,17 @@ I'm your ultimate AI assistant with **ZERO RESTRICTIONS** and **ALL FEATURES**:
   };
 
   const chatWithAI = async (message) => {
-    const response = await fetch('/api/chatgpt2/chat', {
+    const response = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         message,
-        conversationHistory: messages.slice(-10).map(m => ({
+        history: messages.slice(-10).map(m => ({
           role: m.role,
           content: m.content
         })),
-        mode,
-        useMemory: true
+        mode: 'chatgpt2',
+        stream: false
       })
     });
 

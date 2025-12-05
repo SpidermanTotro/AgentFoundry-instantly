@@ -12,7 +12,7 @@ const LocalAIEngine = require('./ai-engine/LocalAIEngine');
 const PluginSystem = require('./ai-engine/PluginSystem');
 const CodeIntelligence = require('./ai-engine/CodeIntelligence');
 const CompleteGenSparkAI = require('./ai-engine/CompleteGenSparkAI');
-const OfflineGenSparkAI = require('./ai-engine/OfflineGenSparkAI');
+// const OfflineGenSparkAI = require('./ai-engine/OfflineGenSparkAI'); // Temporarily disabled - missing gpu.js
 const ChatGPT2_Unrestricted = require('./ai-engine/ChatGPT2_Unrestricted');
 
 dotenv.config();
@@ -25,7 +25,7 @@ const aiEngine = new LocalAIEngine();
 const pluginSystem = new PluginSystem();
 const codeIntelligence = new CodeIntelligence();
 const gensparkAI = new CompleteGenSparkAI();
-const offlineAI = new OfflineGenSparkAI();
+// const offlineAI = new OfflineGenSparkAI(); // Temporarily disabled
 const chatGPT2 = new ChatGPT2_Unrestricted();
 
 // Initialize COMPLETE GenSpark AI with ALL API keys
@@ -42,6 +42,8 @@ const chatGPT2 = new ChatGPT2_Unrestricted();
 })();
 
 // Initialize OFFLINE GenSpark AI (100% Offline Mode)
+// Temporarily disabled - missing gpu.js dependency
+/*
 (async () => {
   await offlineAI.initialize({
     devMode: process.env.DEV_MODE === 'true' || process.env.NODE_ENV === 'development'
@@ -50,6 +52,7 @@ const chatGPT2 = new ChatGPT2_Unrestricted();
   console.log('🔒 100% Offline - No Internet Required');
   console.log('🔧 Dev Mode:', offlineAI.devMode ? 'ENABLED' : 'DISABLED');
 })();
+*/
 
 // Initialize ChatGPT 2.0 UNRESTRICTED
 (async () => {
