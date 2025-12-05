@@ -7,8 +7,10 @@ import { useDropzone } from 'react-dropzone';
 import { 
   FaPaperPlane, FaImage, FaVideo, FaMusic, FaFile, FaSearch, 
   FaMicrophone, FaStop, FaDownload, FaTrash, FaSun, FaMoon,
-  FaCog, FaPlus, FaHistory, FaRobot, FaCode, FaLightbulb
+  FaCog, FaPlus, FaHistory, FaRobot, FaCode, FaLightbulb,
+  FaEdit, FaMerge, FaUpload, FaFileExport
 } from 'react-icons/fa';
+import conversationManager from '../utils/ConversationManager';
 import './ChatGPT2.css';
 
 const ChatGPT2 = () => {
@@ -59,14 +61,55 @@ I'm your ultimate AI assistant with **ZERO RESTRICTIONS** and **ALL FEATURES**:
   const [currentConversationId, setCurrentConversationId] = useState(1);
   const [isRecording, setIsRecording] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedConvs, setSelectedConvs] = useState([]);
+  const [showMergeModal, setShowMergeModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [stats, setStats] = useState(null);
   
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
+  const importFileRef = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  // Load conversations on mount
+  useEffect(() => {
+    const loaded = conversationManager.loadConversations();
+    if (loaded.length > 0) {
+      setConversations(loaded);
+      // Load last conversation
+      const lastConv = loaded[0];
+      setCurrentConversationId(lastConv.id);
+      setMessages(lastConv.messages || []);
+    }
+    
+    // Load stats
+    setStats(conversationManager.getStatistics());
+  }, []);
+
+  // Save conversation whenever messages change
+  useEffect(() => {
+    if (messages.length > 0 && currentConversationId) {
+      const currentConv = conversations.find(c => c.id === currentConversationId);
+      if (currentConv) {
+        const updated = {
+          ...currentConv,
+          messages: messages,
+          messageCount: messages.length
+        };
+        conversationManager.saveConversation(updated);
+        
+        // Update local state
+        setConversations(prev => 
+          prev.map(c => c.id === currentConversationId ? updated : c)
+        );
+      }
+    }
+  }, [messages, currentConversationId]);
 
   useEffect(() => {
     scrollToBottom();
@@ -376,33 +419,145 @@ I'm your ultimate AI assistant with **ZERO RESTRICTIONS** and **ALL FEATURES**:
 
   const newConversation = () => {
     const newId = Date.now();
-    const newConv = {
-      id: newId,
-      title: 'New Conversation',
-      date: new Date()
-    };
-    setConversations(prev => [newConv, ...prev]);
-    setCurrentConversationId(newId);
-    setMessages([{
+    const welcomeMsg = {
       id: 1,
       role: 'assistant',
       content: '👋 New conversation started! How can I help?',
       timestamp: new Date(),
       type: 'text'
-    }]);
+    };
+    
+    const newConv = {
+      id: newId,
+      title: 'New Conversation',
+      date: new Date(),
+      messages: [welcomeMsg],
+      messageCount: 1
+    };
+    
+    conversationManager.saveConversation(newConv);
+    setConversations(prev => [newConv, ...prev]);
+    setCurrentConversationId(newId);
+    setMessages([welcomeMsg]);
+    setStats(conversationManager.getStatistics());
+  };
+
+  const loadConversation = (id) => {
+    const conv = conversationManager.getConversation(id);
+    if (conv) {
+      setCurrentConversationId(id);
+      setMessages(conv.messages || []);
+    }
+  };
+
+  const deleteConversation = (id) => {
+    if (window.confirm('Delete this conversation?')) {
+      conversationManager.deleteConversation(id);
+      const updated = conversationManager.loadConversations();
+      setConversations(updated);
+      
+      if (id === currentConversationId) {
+        if (updated.length > 0) {
+          loadConversation(updated[0].id);
+        } else {
+          newConversation();
+        }
+      }
+      setStats(conversationManager.getStatistics());
+    }
+  };
+
+  const renameConversation = (id) => {
+    const conv = conversations.find(c => c.id === id);
+    const newTitle = prompt('Enter new title:', conv?.title || '');
+    if (newTitle && newTitle.trim()) {
+      conversationManager.updateTitle(id, newTitle.trim());
+      setConversations(prev =>
+        prev.map(c => c.id === id ? { ...c, title: newTitle.trim() } : c)
+      );
+    }
+  };
+
+  const mergeSelectedConversations = () => {
+    if (selectedConvs.length < 2) {
+      alert('Select at least 2 conversations to merge');
+      return;
+    }
+
+    const title = prompt('Enter title for merged conversation:', 'Merged Conversation');
+    if (!title) return;
+
+    const result = conversationManager.mergeConversations(selectedConvs, title);
+    if (result.success) {
+      const updated = conversationManager.loadConversations();
+      setConversations(updated);
+      setSelectedConvs([]);
+      setShowMergeModal(false);
+      loadConversation(result.conversation.id);
+      alert(`Successfully merged ${selectedConvs.length} conversations!`);
+      setStats(conversationManager.getStatistics());
+    } else {
+      alert(`Merge failed: ${result.error}`);
+    }
+  };
+
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    if (query.trim()) {
+      const results = conversationManager.searchConversations(query);
+      setConversations(results);
+    } else {
+      setConversations(conversationManager.loadConversations());
+    }
   };
 
   const exportConversation = () => {
-    const content = messages.map(m => 
-      `${m.role.toUpperCase()}: ${m.content}`
-    ).join('\n\n');
-    
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `conversation-${Date.now()}.txt`;
-    a.click();
+    const result = conversationManager.exportConversation(currentConversationId);
+    if (result.success) {
+      const blob = new Blob([result.data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = result.filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    } else {
+      alert(`Export failed: ${result.error}`);
+    }
+  };
+
+  const exportAllConversations = () => {
+    const result = conversationManager.exportAllConversations();
+    if (result.success) {
+      const blob = new Blob([result.data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = result.filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      alert(`Exported ${conversationManager.getStatistics().total} conversations!`);
+    }
+  };
+
+  const importConversations = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = conversationManager.importConversation(e.target.result);
+      if (result.success) {
+        const updated = conversationManager.loadConversations();
+        setConversations(updated);
+        setShowImportModal(false);
+        alert(result.message);
+        setStats(conversationManager.getStatistics());
+      } else {
+        alert(`Import failed: ${result.error}`);
+      }
+    };
+    reader.readAsText(file);
   };
 
   const quickPrompts = [
@@ -429,27 +584,128 @@ I'm your ultimate AI assistant with **ZERO RESTRICTIONS** and **ALL FEATURES**:
             <button className="new-chat-btn" onClick={newConversation}>
               <FaPlus /> New Chat
             </button>
+            
+            <div className="sidebar-search">
+              <input
+                type="text"
+                placeholder="Search conversations..."
+                value={searchQuery}
+                onChange={(e) => handleSearch(e.target.value)}
+                className="search-input"
+              />
+            </div>
+
+            <div className="sidebar-actions">
+              <button 
+                className="sidebar-action-btn" 
+                onClick={() => setShowMergeModal(!showMergeModal)}
+                title="Merge conversations"
+              >
+                <FaMerge />
+              </button>
+              <button 
+                className="sidebar-action-btn"
+                onClick={() => importFileRef.current?.click()}
+                title="Import conversations"
+              >
+                <FaUpload />
+              </button>
+              <button 
+                className="sidebar-action-btn"
+                onClick={exportAllConversations}
+                title="Export all"
+              >
+                <FaFileExport />
+              </button>
+              <input
+                type="file"
+                ref={importFileRef}
+                style={{ display: 'none' }}
+                accept=".json"
+                onChange={importConversations}
+              />
+            </div>
           </div>
           
           <div className="conversations-list">
             {conversations.map(conv => (
               <div
                 key={conv.id}
-                className={`conversation-item ${conv.id === currentConversationId ? 'active' : ''}`}
-                onClick={() => setCurrentConversationId(conv.id)}
+                className={`conversation-item ${conv.id === currentConversationId ? 'active' : ''} ${selectedConvs.includes(conv.id) ? 'selected' : ''}`}
               >
-                <FaHistory />
-                <div className="conversation-info">
-                  <span className="conversation-title">{conv.title}</span>
-                  <span className="conversation-date">
-                    {conv.date.toLocaleDateString()}
-                  </span>
+                {showMergeModal && (
+                  <input
+                    type="checkbox"
+                    checked={selectedConvs.includes(conv.id)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedConvs(prev => [...prev, conv.id]);
+                      } else {
+                        setSelectedConvs(prev => prev.filter(id => id !== conv.id));
+                      }
+                    }}
+                    className="conv-checkbox"
+                  />
+                )}
+                
+                <div 
+                  className="conv-main"
+                  onClick={() => !showMergeModal && loadConversation(conv.id)}
+                >
+                  <FaHistory />
+                  <div className="conversation-info">
+                    <span className="conversation-title">{conv.title}</span>
+                    <span className="conversation-date">
+                      {conv.date.toLocaleDateString()} • {conv.messageCount || 0} msgs
+                    </span>
+                  </div>
+                </div>
+
+                <div className="conv-actions">
+                  <button 
+                    className="conv-action-btn"
+                    onClick={(e) => { e.stopPropagation(); renameConversation(conv.id); }}
+                    title="Rename"
+                  >
+                    <FaEdit size={12} />
+                  </button>
+                  <button 
+                    className="conv-action-btn"
+                    onClick={(e) => { e.stopPropagation(); deleteConversation(conv.id); }}
+                    title="Delete"
+                  >
+                    <FaTrash size={12} />
+                  </button>
                 </div>
               </div>
             ))}
           </div>
 
+          {showMergeModal && (
+            <div className="merge-toolbar">
+              <button 
+                className="merge-btn"
+                onClick={mergeSelectedConversations}
+                disabled={selectedConvs.length < 2}
+              >
+                <FaMerge /> Merge {selectedConvs.length} Selected
+              </button>
+              <button 
+                className="cancel-btn"
+                onClick={() => { setShowMergeModal(false); setSelectedConvs([]); }}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+
           <div className="sidebar-footer">
+            {stats && (
+              <div className="sidebar-stats">
+                <span>📊 {stats.total} chats • {stats.totalMessages} messages</span>
+              </div>
+            )}
+            
             <button className="sidebar-btn" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
               {theme === 'dark' ? <FaSun /> : <FaMoon />} Theme
             </button>
