@@ -11,6 +11,7 @@ const dotenv = require('dotenv');
 const LocalAIEngine = require('./ai-engine/LocalAIEngine');
 const PluginSystem = require('./ai-engine/PluginSystem');
 const CodeIntelligence = require('./ai-engine/CodeIntelligence');
+const GenSparkAI = require('./ai-engine/GenSparkAI');
 
 dotenv.config();
 
@@ -21,6 +22,17 @@ const PORT = process.env.PORT || 3001;
 const aiEngine = new LocalAIEngine();
 const pluginSystem = new PluginSystem();
 const codeIntelligence = new CodeIntelligence();
+const gensparkAI = new GenSparkAI();
+
+// Initialize GenSpark AI with API keys (if provided)
+(async () => {
+  await gensparkAI.initialize({
+    googleApiKey: process.env.GOOGLE_API_KEY,
+    anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+    cohereApiKey: process.env.COHERE_API_KEY
+  });
+  console.log('✅ GenSpark AI initialized');
+})();
 
 // Middleware
 app.use(cors());
@@ -46,8 +58,9 @@ app.get('/api/health', (req, res) => {
   const stats = pluginSystem.getStatistics();
   res.json({
     status: 'ok',
-    message: 'Advanced AI Copilot Server Running',
-    mode: 'offline',
+    message: 'GenSpark AI Copilot Pro - Complete Suite Running',
+    mode: gensparkAI.mode,
+    genspark_features: true,
     features: {
       localAI: true,
       codeIntelligence: true,
