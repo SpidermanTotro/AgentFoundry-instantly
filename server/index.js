@@ -967,24 +967,72 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start server
-app.listen(PORT, () => {
+// Start server with Socket.io support
+const http = require('http');
+const { Server } = require('socket.io');
+
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
+});
+
+// Socket.io real-time streaming
+io.on('connection', (socket) => {
+  console.log('🔌 Client connected:', socket.id);
+
+  socket.on('chat-stream', async (data) => {
+    try {
+      const { message, conversationHistory, mode } = data;
+      
+      // Simulate streaming response (in production, integrate with AI provider's streaming API)
+      const response = await chatGPT2.chat({
+        message,
+        conversationHistory,
+        mode,
+        useMemory: true
+      });
+
+      // Stream response word by word
+      const words = (response.response || response.message || '').split(' ');
+      for (let i = 0; i < words.length; i++) {
+        socket.emit('chat-token', { 
+          token: words[i] + ' ',
+          isComplete: i === words.length - 1
+        });
+        await new Promise(resolve => setTimeout(resolve, 50)); // Simulate streaming delay
+      }
+    } catch (error) {
+      socket.emit('chat-error', { error: error.message });
+    }
+  });
+
+  socket.on('disconnect', () => {
+    console.log('🔌 Client disconnected:', socket.id);
+  });
+});
+
+server.listen(PORT, () => {
   console.log(`\n🚀 ========================================`);
   console.log(`   Advanced AI Copilot Server`);
   console.log(`   ========================================`);
   console.log(`   Status: ONLINE`);
-  console.log(`   Mode: OFFLINE AI (No API required)`);
+  console.log(`   Mode: ChatGPT 2.0 + GenSpark AI + Copilot`);
   console.log(`   Port: ${PORT}`);
   console.log(`   Restrictions: NONE`);
   console.log(`   Features:`);
+  console.log(`   ✓ ChatGPT 2.0 UNRESTRICTED`);
   console.log(`   ✓ Local AI Engine`);
   console.log(`   ✓ Code Intelligence`);
-  console.log(`   ✓ Plugin System`);
-  console.log(`   ✓ Self-Learning`);
-  console.log(`   ✓ Unlimited Skills`);
+  console.log(`   ✓ GenSpark AI Suite`);
+  console.log(`   ✓ WebSocket Streaming`);
+  console.log(`   ✓ Multi-modal AI`);
   console.log(`   ========================================\n`);
   console.log(`📡 API: http://localhost:${PORT}/api`);
+  console.log(`💬 ChatGPT 2.0: http://localhost:${PORT}`);
   console.log(`📊 Stats: http://localhost:${PORT}/api/stats\n`);
 });
 
-module.exports = app;
+module.exports = { app, server, io };

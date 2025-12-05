@@ -4,9 +4,11 @@ import CodeAssistant from './components/CodeAssistant';
 import ChatPanel from './components/ChatPanel';
 import StatusBar from './components/StatusBar';
 import SkillsPanel from './components/SkillsPanel';
+import ChatGPT2 from './components/ChatGPT2';
 import './App.css';
 
 function App() {
+  const [viewMode, setViewMode] = useState('chat'); // 'chat' or 'code'
   const [code, setCode] = useState(`// Advanced AI Copilot - Offline & Unrestricted
 // Professional code intelligence with self-learning capabilities
 
@@ -227,6 +229,11 @@ async function fetchUserData(userId) {
     return score > 85 ? '#4ade80' : score > 65 ? '#fbbf24' : score > 35 ? '#fb923c' : '#f87171';
   };
 
+  // If in ChatGPT mode, render ChatGPT2 component
+  if (viewMode === 'chat') {
+    return <ChatGPT2 onSwitchToCode={() => setViewMode('code')} />;
+  }
+
   return (
     <div className="app">
       <header className="app-header">
@@ -270,6 +277,15 @@ async function fetchUserData(userId) {
         </div>
         
         <div className="header-controls">
+          <button 
+            onClick={() => setViewMode('chat')}
+            className="icon-btn"
+            title="Switch to ChatGPT Mode"
+            style={{ background: '#10a37f', color: 'white', padding: '8px 16px', borderRadius: '8px', fontWeight: '600' }}
+          >
+            💬 ChatGPT Mode
+          </button>
+          
           <select 
             value={language} 
             onChange={(e) => setLanguage(e.target.value)}
