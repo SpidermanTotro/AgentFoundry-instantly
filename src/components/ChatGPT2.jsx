@@ -11,7 +11,7 @@ import {
 } from 'react-icons/fa';
 import './ChatGPT2.css';
 
-const ChatGPT2 = ({ onSwitchToCode }) => {
+const ChatGPT2 = () => {
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -51,7 +51,7 @@ I'm your ultimate AI assistant with **ZERO RESTRICTIONS** and **ALL FEATURES**:
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [theme, setTheme] = useState('dark');
-  const [mode, setMode] = useState('chat'); // chat, code, creative
+  const [mode, setMode] = useState('chat');
   const [showSidebar, setShowSidebar] = useState(true);
   const [conversations, setConversations] = useState([
     { id: 1, title: 'ChatGPT 2.0 UNRESTRICTED', date: new Date() }
@@ -151,7 +151,6 @@ I'm your ultimate AI assistant with **ZERO RESTRICTIONS** and **ALL FEATURES**:
     setStreamingMessage('');
 
     try {
-      // Check if it's a special command
       if (messageText.startsWith('/image ')) {
         await generateImage(messageText.substring(7));
       } else if (messageText.startsWith('/video ')) {
@@ -165,7 +164,6 @@ I'm your ultimate AI assistant with **ZERO RESTRICTIONS** and **ALL FEATURES**:
       } else if (messageText.startsWith('/code ')) {
         await executeCode(messageText.substring(6));
       } else {
-        // Regular chat
         await chatWithAI(messageText);
       }
     } catch (error) {
@@ -341,7 +339,7 @@ I'm your ultimate AI assistant with **ZERO RESTRICTIONS** and **ALL FEATURES**:
     const aiMessage = {
       id: Date.now() + 2,
       role: 'assistant',
-      content: `# 📄 Crawled: ${url}\n\n${data.content || data.text || 'Content extracted successfully'}`,
+      content: `# 📄 Crawled: ${url}\n\n${data.content || data.text || 'Content extracted'}`,
       timestamp: new Date(),
       type: 'text'
     };
@@ -361,7 +359,7 @@ I'm your ultimate AI assistant with **ZERO RESTRICTIONS** and **ALL FEATURES**:
     const aiMessage = {
       id: Date.now() + 1,
       role: 'assistant',
-      content: `## Code Execution Result:\n\`\`\`\n${data.output || data.result}\n\`\`\``,
+      content: `## Code Execution:\n\`\`\`\n${data.output || data.result}\n\`\`\``,
       timestamp: new Date(),
       type: 'text'
     };
@@ -388,7 +386,7 @@ I'm your ultimate AI assistant with **ZERO RESTRICTIONS** and **ALL FEATURES**:
     setMessages([{
       id: 1,
       role: 'assistant',
-      content: '👋 New conversation started! How can I help you?',
+      content: '👋 New conversation started! How can I help?',
       timestamp: new Date(),
       type: 'text'
     }]);
@@ -408,12 +406,12 @@ I'm your ultimate AI assistant with **ZERO RESTRICTIONS** and **ALL FEATURES**:
   };
 
   const quickPrompts = [
-    { icon: '🎨', text: '/image Create a beautiful sunset landscape', label: 'Generate Image' },
-    { icon: '🎬', text: '/video Create a flying bird animation', label: 'Generate Video' },
+    { icon: '🎨', text: '/image Beautiful sunset landscape', label: 'Generate Image' },
+    { icon: '🎬', text: '/video Flying bird animation', label: 'Generate Video' },
     { icon: '🔍', text: '/search Latest AI news', label: 'Web Search' },
-    { icon: '💻', text: 'Write a Python function to sort an array', label: 'Code Help' },
-    { icon: '📄', text: 'Summarize this document', label: 'Document AI' },
-    { icon: '🎵', text: '/audio Generate calm meditation music', label: 'Generate Audio' }
+    { icon: '💻', text: 'Write Python sort function', label: 'Code Help' },
+    { icon: '📄', text: 'Summarize document', label: 'Document AI' },
+    { icon: '🎵', text: '/audio Meditation music', label: 'Generate Audio' }
   ];
 
   return (
@@ -421,11 +419,10 @@ I'm your ultimate AI assistant with **ZERO RESTRICTIONS** and **ALL FEATURES**:
       {isDragActive && (
         <div className="drag-overlay">
           <FaFile size={48} />
-          <p>Drop files here to process them...</p>
+          <p>Drop files here...</p>
         </div>
       )}
 
-      {/* Sidebar */}
       {showSidebar && (
         <div className="chatgpt2-sidebar">
           <div className="sidebar-header">
@@ -463,9 +460,7 @@ I'm your ultimate AI assistant with **ZERO RESTRICTIONS** and **ALL FEATURES**:
         </div>
       )}
 
-      {/* Main Chat Area */}
       <div className="chatgpt2-main">
-        {/* Header */}
         <div className="chatgpt2-header">
           <button 
             className="toggle-sidebar-btn"
@@ -487,12 +482,6 @@ I'm your ultimate AI assistant with **ZERO RESTRICTIONS** and **ALL FEATURES**:
           </div>
 
           <div className="header-actions">
-            {onSwitchToCode && (
-              <button className="header-btn" onClick={onSwitchToCode}>
-                <FaCode /> Code Editor
-              </button>
-            )}
-            
             <select 
               value={mode} 
               onChange={(e) => setMode(e.target.value)}
@@ -509,16 +498,7 @@ I'm your ultimate AI assistant with **ZERO RESTRICTIONS** and **ALL FEATURES**:
           </div>
         </div>
 
-        {/* Messages */}
         <div className="chatgpt2-messages">
-          {messages.length === 0 && (
-            <div className="empty-state">
-              <FaLightbulb size={64} />
-              <h3>Start a conversation!</h3>
-              <p>Try the quick prompts below or type your own message</p>
-            </div>
-          )}
-
           {messages.map(message => (
             <div key={message.id} className={`message ${message.role}`}>
               <div className="message-avatar">
@@ -573,13 +553,6 @@ I'm your ultimate AI assistant with **ZERO RESTRICTIONS** and **ALL FEATURES**:
                     <p>{message.content}</p>
                   </div>
                 )}
-                
-                {message.type === 'file' && (
-                  <div className="message-file">
-                    <FaFile />
-                    <span>{message.file.name}</span>
-                  </div>
-                )}
 
                 <div className="message-time">
                   {message.timestamp.toLocaleTimeString()}
@@ -587,16 +560,6 @@ I'm your ultimate AI assistant with **ZERO RESTRICTIONS** and **ALL FEATURES**:
               </div>
             </div>
           ))}
-
-          {streamingMessage && (
-            <div className="message assistant streaming">
-              <div className="message-avatar">🤖</div>
-              <div className="message-content">
-                {streamingMessage}
-                <span className="cursor">|</span>
-              </div>
-            </div>
-          )}
 
           {isLoading && !streamingMessage && (
             <div className="message assistant">
@@ -614,10 +577,9 @@ I'm your ultimate AI assistant with **ZERO RESTRICTIONS** and **ALL FEATURES**:
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Quick Prompts */}
         {messages.length <= 1 && (
           <div className="quick-prompts">
-            <h4>🚀 Try these commands:</h4>
+            <h4>🚀 Try these:</h4>
             <div className="prompts-grid">
               {quickPrompts.map((prompt, i) => (
                 <button
@@ -633,13 +595,11 @@ I'm your ultimate AI assistant with **ZERO RESTRICTIONS** and **ALL FEATURES**:
           </div>
         )}
 
-        {/* Input Area */}
         <div className="chatgpt2-input-container">
           <div className="input-actions">
             <button 
               className="action-btn"
               onClick={() => fileInputRef.current?.click()}
-              title="Upload file"
             >
               <FaFile />
             </button>
@@ -654,43 +614,23 @@ I'm your ultimate AI assistant with **ZERO RESTRICTIONS** and **ALL FEATURES**:
               }}
             />
             
-            <button 
-              className="action-btn"
-              onClick={() => setIsRecording(!isRecording)}
-              title="Voice input"
-            >
+            <button className="action-btn" onClick={() => setIsRecording(!isRecording)}>
               {isRecording ? <FaStop className="recording" /> : <FaMicrophone />}
             </button>
             
-            <button 
-              className="action-btn"
-              onClick={() => sendMessage('/image ')}
-              title="Generate image"
-            >
+            <button className="action-btn" title="Image">
               <FaImage />
             </button>
             
-            <button 
-              className="action-btn"
-              onClick={() => sendMessage('/video ')}
-              title="Generate video"
-            >
+            <button className="action-btn" title="Video">
               <FaVideo />
             </button>
             
-            <button 
-              className="action-btn"
-              onClick={() => sendMessage('/audio ')}
-              title="Generate audio"
-            >
+            <button className="action-btn" title="Audio">
               <FaMusic />
             </button>
             
-            <button 
-              className="action-btn"
-              onClick={() => sendMessage('/search ')}
-              title="Web search"
-            >
+            <button className="action-btn" title="Search">
               <FaSearch />
             </button>
           </div>
@@ -701,7 +641,7 @@ I'm your ultimate AI assistant with **ZERO RESTRICTIONS** and **ALL FEATURES**:
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Message ChatGPT 2.0... (try /image, /video, /audio, /search, /code commands)"
+              placeholder="Message ChatGPT 2.0... (try /image, /video, /audio, /search)"
               className="chat-input"
               rows="1"
             />
@@ -716,7 +656,7 @@ I'm your ultimate AI assistant with **ZERO RESTRICTIONS** and **ALL FEATURES**:
           </div>
 
           <div className="input-help">
-            💡 <strong>Pro tip:</strong> Use /image, /video, /audio, /search, /crawl, /code commands for special features
+            💡 Use /image, /video, /audio, /search, /crawl, /code commands
           </div>
         </div>
       </div>
