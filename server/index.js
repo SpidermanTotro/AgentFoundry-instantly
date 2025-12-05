@@ -11,7 +11,7 @@ const dotenv = require('dotenv');
 const LocalAIEngine = require('./ai-engine/LocalAIEngine');
 const PluginSystem = require('./ai-engine/PluginSystem');
 const CodeIntelligence = require('./ai-engine/CodeIntelligence');
-const GenSparkAI = require('./ai-engine/GenSparkAI');
+const CompleteGenSparkAI = require('./ai-engine/CompleteGenSparkAI');
 
 dotenv.config();
 
@@ -22,16 +22,19 @@ const PORT = process.env.PORT || 3001;
 const aiEngine = new LocalAIEngine();
 const pluginSystem = new PluginSystem();
 const codeIntelligence = new CodeIntelligence();
-const gensparkAI = new GenSparkAI();
+const gensparkAI = new CompleteGenSparkAI();
 
-// Initialize GenSpark AI with API keys (if provided)
+// Initialize COMPLETE GenSpark AI with ALL API keys
 (async () => {
   await gensparkAI.initialize({
     googleApiKey: process.env.GOOGLE_API_KEY,
     anthropicApiKey: process.env.ANTHROPIC_API_KEY,
-    cohereApiKey: process.env.COHERE_API_KEY
+    replicateApiToken: process.env.REPLICATE_API_TOKEN,
+    elevenLabsApiKey: process.env.ELEVENLABS_API_KEY,
+    serpApiKey: process.env.SERP_API_KEY
   });
-  console.log('✅ GenSpark AI initialized');
+  console.log('✅ COMPLETE GenSpark AI Suite initialized');
+  console.log('📦 All Features: Image Gen, Video Gen, Audio Gen, Web Search, Document AI');
 })();
 
 // Middleware
@@ -437,6 +440,121 @@ app.get('/api/stats', (req, res) => {
       uptime: process.uptime()
     }
   });
+});
+
+// ==================== COMPLETE GENSPARK AI ENDPOINTS ====================
+
+// 🎨 IMAGE GENERATION
+app.post('/api/generate-image', async (req, res) => {
+  try {
+    const { prompt, model, size, count } = req.body;
+    const result = await gensparkAI.generateImage(prompt, { model, size, count });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 🔍 IMAGE ANALYSIS
+app.post('/api/analyze-image', async (req, res) => {
+  try {
+    const { imageUrl, prompt } = req.body;
+    const result = await gensparkAI.analyzeImage(imageUrl, prompt);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 🎬 VIDEO GENERATION
+app.post('/api/generate-video', async (req, res) => {
+  try {
+    const { prompt, duration, fps, width, height } = req.body;
+    const result = await gensparkAI.generateVideo(prompt, { duration, fps, width, height });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 🎵 AUDIO GENERATION (TTS)
+app.post('/api/generate-audio', async (req, res) => {
+  try {
+    const { text, voice, model } = req.body;
+    const result = await gensparkAI.generateAudio(text, { voice, model });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 🎼 MUSIC GENERATION
+app.post('/api/generate-music', async (req, res) => {
+  try {
+    const { prompt, duration, genre } = req.body;
+    const result = await gensparkAI.generateMusic(prompt, { duration, genre });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 🔍 WEB SEARCH
+app.post('/api/search', async (req, res) => {
+  try {
+    const { query, limit, type } = req.body;
+    const result = await gensparkAI.searchWeb(query, { limit, type });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 🌐 WEB CRAWLING
+app.post('/api/crawl', async (req, res) => {
+  try {
+    const { url, depth, extractCode, extractImages, extractLinks } = req.body;
+    const result = await gensparkAI.crawlWebsite(url, { depth, extractCode, extractImages, extractLinks });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 📄 DOCUMENT PROCESSING
+app.post('/api/process-document', async (req, res) => {
+  try {
+    const { filePath, type } = req.body;
+    const result = await gensparkAI.processDocument(filePath, type);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 💬 ADVANCED TEXT GENERATION
+app.post('/api/generate-text', async (req, res) => {
+  try {
+    const { prompt, provider, temperature, maxTokens, systemPrompt } = req.body;
+    const result = await gensparkAI.generateText(prompt, { provider, temperature, maxTokens, systemPrompt });
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 📊 GENSPARK AI STATS
+app.get('/api/genspark-stats', async (req, res) => {
+  try {
+    const stats = await gensparkAI.getStats();
+    res.json({
+      success: true,
+      ...stats,
+      message: 'Complete GenSpark AI Suite - All Features Available'
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
 });
 
 // Error handling middleware
