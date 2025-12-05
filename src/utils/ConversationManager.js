@@ -10,7 +10,8 @@ class ConversationManager {
     this.settingsKey = 'chatgpt2_settings';
   }
 
-  // Save all conversations
+  // ==================== PERSISTENCE ====================
+
   saveConversations(conversations) {
     try {
       localStorage.setItem(this.storageKey, JSON.stringify(conversations));
@@ -21,7 +22,6 @@ class ConversationManager {
     }
   }
 
-  // Load all conversations
   loadConversations() {
     try {
       const data = localStorage.getItem(this.storageKey);
@@ -43,7 +43,6 @@ class ConversationManager {
     }
   }
 
-  // Save single conversation
   saveConversation(conversation) {
     const conversations = this.loadConversations();
     const index = conversations.findIndex(c => c.id === conversation.id);
@@ -63,26 +62,34 @@ class ConversationManager {
     return this.saveConversations(conversations);
   }
 
-  // Get conversation by ID
   getConversation(id) {
     const conversations = this.loadConversations();
     return conversations.find(c => c.id === id);
   }
 
-  // Delete conversation
   deleteConversation(id) {
     const conversations = this.loadConversations();
     const filtered = conversations.filter(c => c.id !== id);
     return this.saveConversations(filtered);
   }
 
-  // Merge conversations
+  archiveConversation(id) {
+    const conversation = this.getConversation(id);
+    if (!conversation) return { success: false, error: 'Conversation not found' };
+    
+    conversation.archived = true;
+    conversation.archivedAt = new Date();
+    return this.saveConversation(conversation);
+  }
+
+  // ==================== MERGING ====================
+
   mergeConversations(conversationIds, newTitle = 'Merged Conversation') {
     const conversations = this.loadConversations();
     const toMerge = conversations.filter(c => conversationIds.includes(c.id));
     
     if (toMerge.length < 2) {
-      return { success: false, error: 'Need at least 2 conversations' };
+      return { success: false, error: 'Need at least 2 conversations to merge' };
     }
 
     toMerge.sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -93,7 +100,7 @@ class ConversationManager {
         allMessages.push({
           id: Date.now() + index,
           role: 'system',
-          content: `--- Merged from: ${conv.title} ---`,
+          content: `--- Merged from: ${conv.title} (${new Date(conv.date).toLocaleString()}) ---`,
           timestamp: new Date(),
           type: 'separator'
         });
@@ -124,7 +131,8 @@ class ConversationManager {
     return result;
   }
 
-  // Search conversations
+  // ==================== SEARCH & FILTER ====================
+
   searchConversations(query) {
     const conversations = this.loadConversations();
     const lowerQuery = query.toLowerCase();
@@ -135,11 +143,49 @@ class ConversationManager {
       if (conv.messages?.some(msg => 
         msg.content?.toLowerCase().includes(lowerQuery)
       )) return true;
+      
       return false;
     });
   }
 
-  // Export conversation
+  sortConversations(conversations, sortBy = 'date', order = 'desc') {
+    const sorted = [...conversations];
+    
+    sorted.sort((a, b) => {
+      let valueA, valueB;
+      
+      switch (sortBy) {
+        case 'date':
+          valueA = new Date(a.date);
+          valueB = new Date(b.date);
+          break;
+        case 'lastUpdated':
+          valueA = new Date(a.lastUpdated || a.date);
+          valueB = new Date(b.lastUpdated || b.date);
+          break;
+        case 'title':
+          valueA = a.title?.toLowerCase() || '';
+          valueB = b.title?.toLowerCase() || '';
+          break;
+        case 'messages':
+          valueA = a.messageCount || a.messages?.length || 0;
+          valueB = b.messageCount || b.messages?.length || 0;
+          break;
+        default:
+          return 0;
+      }
+      
+      if (order === 'asc') {
+        return valueA > valueB ? 1 : -1;
+      }
+      return valueA < valueB ? 1 : -1;
+    });
+
+    return sorted;
+  }
+
+  // ==================== IMPORT/EXPORT ====================
+
   exportConversation(id) {
     const conversation = this.getConversation(id);
     if (!conversation) {
@@ -159,7 +205,6 @@ class ConversationManager {
     };
   }
 
-  // Export all conversations
   exportAllConversations() {
     const conversations = this.loadConversations();
     
@@ -177,7 +222,6 @@ class ConversationManager {
     };
   }
 
-  // Import conversations
   importConversation(jsonData) {
     try {
       const imported = JSON.parse(jsonData);
@@ -219,38 +263,90 @@ class ConversationManager {
     }
   }
 
-  // Get statistics
+  // ==================== TAGS ====================
+
+  addTag(conversationId, tag) {
+    const conversation = this.getConversation(conversationId);
+    if (!conversation) return { success: false, error: 'Conversation not found' };
+
+    if (!conversation.tags) conversation.tags = [];
+    if (!conversation.tags.includes(tag)) {
+      conversation.tags.push(tag);
+    }
+
+    return this.saveConversation(conversation);
+  }
+
+  getAllTags() {
+    const conversations = this.loadConversations();
+    const tags = new Set();
+    
+    conversations.forEach(conv => {
+      if (conv.tags) {
+        conv.tags.forEach(tag => tags.add(tag));
+      }
+    });
+
+    return Array.from(tags).sort();
+  }
+
+  // ==================== ANALYTICS ====================
+
   getStatistics() {
     const conversations = this.loadConversations();
     
     const stats = {
       total: conversations.length,
+      archived: conversations.filter(c => c.archived).length,
+      active: conversations.filter(c => !c.archived).length,
       totalMessages: 0,
-      avgMessagesPerConv: 0
+      avgMessagesPerConv: 0,
+      oldestConversation: null,
+      newestConversation: null,
+      mostActive: null,
+      tagCount: 0,
+      tags: {}
     };
+
+    if (conversations.length === 0) return stats;
 
     conversations.forEach(conv => {
       const msgCount = conv.messageCount || conv.messages?.length || 0;
       stats.totalMessages += msgCount;
+
+      if (conv.tags) {
+        conv.tags.forEach(tag => {
+          stats.tags[tag] = (stats.tags[tag] || 0) + 1;
+        });
+      }
     });
 
-    if (conversations.length > 0) {
-      stats.avgMessagesPerConv = Math.round(stats.totalMessages / conversations.length);
-    }
+    stats.avgMessagesPerConv = Math.round(stats.totalMessages / conversations.length);
+    stats.tagCount = Object.keys(stats.tags).length;
+
+    const sorted = [...conversations].sort((a, b) => 
+      new Date(a.date) - new Date(b.date)
+    );
+    stats.oldestConversation = sorted[0];
+    stats.newestConversation = sorted[sorted.length - 1];
+
+    const withCounts = conversations.map(c => ({
+      ...c,
+      count: c.messageCount || c.messages?.length || 0
+    }));
+    stats.mostActive = withCounts.sort((a, b) => b.count - a.count)[0];
 
     return stats;
   }
 
-  // Update title
   updateTitle(conversationId, newTitle) {
     const conversation = this.getConversation(conversationId);
-    if (!conversation) return { success: false, error: 'Not found' };
+    if (!conversation) return { success: false, error: 'Conversation not found' };
 
     conversation.title = newTitle;
     return this.saveConversation(conversation);
   }
 
-  // Clear all
   clearAllConversations() {
     try {
       localStorage.removeItem(this.storageKey);
