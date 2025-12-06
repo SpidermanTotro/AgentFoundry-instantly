@@ -1,4 +1,4 @@
-.PHONY: help install install-dev clean lint format test test-coverage check repair all
+.PHONY: help install install-dev clean lint lint-check format test test-coverage check repair all
 
 # Default target
 .DEFAULT_GOAL := help
@@ -48,6 +48,13 @@ lint: ## Run all linters (flake8, pylint, mypy)
 	-mypy src/ tests/ || true
 	@echo "$(GREEN)✓ Linting complete$(NC)"
 
+lint-check: ## Run linters and fail on any issues (for CI)
+	@echo "$(BLUE)Running strict linting...$(NC)"
+	flake8 src/ tests/
+	pylint src/ tests/
+	mypy src/ tests/
+	@echo "$(GREEN)✓ All linters passed$(NC)"
+
 format: ## Format code with black
 	@echo "$(BLUE)Formatting code...$(NC)"
 	black src/ tests/
@@ -65,7 +72,7 @@ test-coverage: ## Run tests with coverage report
 
 check: ## Run all checks (lint + test)
 	@echo "$(BLUE)Running all checks...$(NC)"
-	@$(MAKE) lint
+	@$(MAKE) lint-check
 	@$(MAKE) test
 	@echo "$(GREEN)✓ All checks complete$(NC)"
 

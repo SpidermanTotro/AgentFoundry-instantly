@@ -21,7 +21,7 @@ echo "✓ Clean complete"
 echo ""
 
 echo "3. Running code formatting (repair)..."
-make format
+make repair
 echo "✓ Code formatting complete"
 echo ""
 
