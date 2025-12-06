@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  forge-spark:
+    build: .
+    container_name: forge-spark-mvp
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./src:/app/src
+      - ./models:/app/models
+      - ./data:/app/data
+    environment:
+      - PYTHONUNBUFFERED=1
+      - MODEL_CACHE_DIR=/app/models
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: forge-spark-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+
+volumes:
+  redis-data:
