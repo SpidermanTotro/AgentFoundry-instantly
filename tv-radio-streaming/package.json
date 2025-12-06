@@ -1,0 +1,21 @@
+{
+  "name": "tv-radio-streaming",
+  "version": "1.0.0",
+  "description": "Free TV and Radio streaming system",
+  "main": "server/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "nodemon server/index.js"
+  },
+  "keywords": ["tv", "radio", "streaming", "free"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}

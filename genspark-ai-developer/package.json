@@ -1,0 +1,28 @@
+{
+  "name": "genspark-ai-developer",
+  "version": "1.0.0",
+  "description": "Next-Level AI Programming Tool - Live Responses, Real Files, 100% Offline",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "node src/tests/test-all.js"
+  },
+  "keywords": ["ai", "coding", "developer", "gguf", "offline", "live", "streaming"],
+  "author": "GenSpark AI Team",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "ws": "^8.14.2",
+    "node-llama-cpp": "^2.7.3",
+    "chokidar": "^3.5.3",
+    "fs-extra": "^11.2.0",
+    "uuid": "^9.0.1",
+    "chalk": "^5.3.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
