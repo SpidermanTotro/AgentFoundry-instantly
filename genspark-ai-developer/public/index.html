@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GenSpark AI Developer - Live Coding</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            text-align: center;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 5px 15px;
+            background: #4caf50;
+            border-radius: 20px;
+            font-size: 0.9em;
+        }
+        
+        .status.disconnected {
+            background: #f44336;
+        }
+        
+        .container {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+        
+        .sidebar {
+            width: 300px;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            overflow: hidden;
+        }
+        
+        .chat-box {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .message.user {
+            background: rgba(102, 126, 234, 0.5);
+            text-align: right;
+        }
+        
+        .message.ai {
+            background: rgba(118, 75, 162, 0.5);
+        }
+        
+        .message.system {
+            background: rgba(76, 175, 80, 0.3);
+            font-style: italic;
+        }
+        
+        .input-area {
+            display: flex;
+            gap: 10px;
+        }
+        
+        input, textarea {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-size: 1em;
+        }
+        
+        input::placeholder, textarea::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        button {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            background: #4caf50;
+            color: #fff;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        button:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .file-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+        
+        .stats {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .stats-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+        }
+        
+        .typing-indicator {
+            display: none;
+            padding: 10px;
+            background: rgba(118, 75, 162, 0.3);
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .typing-indicator.active {
+            display: block;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        pre {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-top: 10px;
+        }
+        
+        code {
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚀 GenSpark AI Developer</h1>
+        <p>Next-Level Programming Tool - Live AI Responses</p>
+        <div class="status" id="status">Disconnected</div>
+    </div>
+    
+    <div class="container">
+        <div class="sidebar">
+            <h3>📊 Statistics</h3>
+            <div class="stats" id="stats">
+                <div class="stats-item">
+                    <span>Files Created:</span>
+                    <span id="filesCount">0</span>
+                </div>
+                <div class="stats-item">
+                    <span>Lines Generated:</span>
+                    <span id="linesCount">0</span>
+                </div>
+                <div class="stats-item">
+                    <span>AI Model:</span>
+                    <span id="modelName">Not Loaded</span>
+                </div>
+            </div>
+            
+            <h3>📁 Recent Files</h3>
+            <div id="filesList"></div>
+        </div>
+        
+        <div class="main">
+            <div class="chat-box" id="chatBox">
+                <div class="message system">
+                    Welcome to GenSpark AI Developer! 🎉<br>
+                    <br>
+                    This is a REAL AI developer that:<br>
+                    ✅ Streams responses LIVE<br>
+                    ✅ Creates REAL files on your system<br>
+                    ✅ Works 100% offline with GGUF models<br>
+                    ✅ Mimics human developer behavior<br>
+                    <br>
+                    Try saying: "Build me a REST API server"
+                </div>
+            </div>
+            
+            <div class="typing-indicator" id="typing">
+                🤖 AI is thinking and coding...
+            </div>
+            
+            <div class="input-area">
+                <textarea 
+                    id="userInput" 
+                    placeholder="Tell the AI what to build... (e.g., 'Create a React todo app')"
+                    rows="3"
+                ></textarea>
+                <button id="sendBtn" onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let ws = null;
+        let filesCreated = 0;
+        let linesGenerated = 0;
+        
+        // Connect to WebSocket
+        function connect() {
+            ws = new WebSocket('ws://localhost:3003');
+            
+            ws.onopen = () => {
+                document.getElementById('status').textContent = '✅ Connected';
+                document.getElementById('status').classList.remove('disconnected');
+                addSystemMessage('Connected to GenSpark AI Developer! 🚀');
+            };
+            
+            ws.onclose = () => {
+                document.getElementById('status').textContent = '❌ Disconnected';
+                document.getElementById('status').classList.add('disconnected');
+                addSystemMessage('Disconnected. Reconnecting...');
+                setTimeout(connect, 2000);
+            };
+            
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                handleMessage(data);
+            };
+        }
+        
+        // Handle incoming messages
+        function handleMessage(data) {
+            const typing = document.getElementById('typing');
+            
+            switch (data.type) {
+                case 'start':
+                    typing.classList.add('active');
+                    break;
+                    
+                case 'token':
+                    // Stream tokens live
+                    updateLastAIMessage(data.full);
+                    break;
+                    
+                case 'done':
+                    typing.classList.remove('active');
+                    const lines = data.full.split('\n').length;
+                    linesGenerated += lines;
+                    updateStats();
+                    break;
+                    
+                case 'phase':
+                    addSystemMessage(`📋 Phase: ${data.phase} - ${data.status}`);
+                    break;
+                    
+                case 'generating':
+                    addSystemMessage(`📝 Generating: ${data.file}...`);
+                    break;
+                    
+                case 'buildComplete':
+                    typing.classList.remove('active');
+                    addSystemMessage(`✅ Project built! ${data.files.length} files created`);
+                    filesCreated += data.files.length;
+                    linesGenerated += data.statistics.totalLines;
+                    updateStats();
+                    addFilesList(data.files);
+                    break;
+                    
+                case 'error':
+                    addSystemMessage(`❌ Error: ${data.error}`);
+                    break;
+            }
+        }
+        
+        // Send message
+        function sendMessage() {
+            const input = document.getElementById('userInput');
+            const message = input.value.trim();
+            
+            if (!message || !ws || ws.readyState !== WebSocket.OPEN) {
+                return;
+            }
+            
+            addUserMessage(message);
+            input.value = '';
+            
+            // Determine if it's a build request
+            if (message.toLowerCase().includes('build') || 
+                message.toLowerCase().includes('create') ||
+                message.toLowerCase().includes('make')) {
+                ws.send(JSON.stringify({
+                    type: 'buildProject',
+                    description: message,
+                    options: {}
+                }));
+                addAIMessage(''); // Empty message that will be updated
+            } else {
+                ws.send(JSON.stringify({
+                    type: 'chat',
+                    prompt: message
+                }));
+                addAIMessage(''); // Empty message that will be updated
+            }
+        }
+        
+        // Add messages to chat
+        function addUserMessage(text) {
+            const chatBox = document.getElementById('chatBox');
+            const msg = document.createElement('div');
+            msg.className = 'message user';
+            msg.textContent = text;
+            chatBox.appendChild(msg);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+        
+        function addAIMessage(text) {
+            const chatBox = document.getElementById('chatBox');
+            const msg = document.createElement('div');
+            msg.className = 'message ai';
+            msg.id = 'lastAIMessage';
+            msg.innerHTML = formatText(text);
+            chatBox.appendChild(msg);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+        
+        function updateLastAIMessage(text) {
+            let lastMsg = document.getElementById('lastAIMessage');
+            if (!lastMsg) {
+                addAIMessage(text);
+                lastMsg = document.getElementById('lastAIMessage');
+            }
+            lastMsg.innerHTML = formatText(text);
+            document.getElementById('chatBox').scrollTop = document.getElementById('chatBox').scrollHeight;
+        }
+        
+        function addSystemMessage(text) {
+            const chatBox = document.getElementById('chatBox');
+            const msg = document.createElement('div');
+            msg.className = 'message system';
+            msg.textContent = text;
+            chatBox.appendChild(msg);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+        
+        // Format text with code blocks
+        function formatText(text) {
+            // Simple markdown-like formatting
+            text = text.replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
+            text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+            text = text.replace(/\n/g, '<br>');
+            return text;
+        }
+        
+        // Update statistics
+        function updateStats() {
+            document.getElementById('filesCount').textContent = filesCreated;
+            document.getElementById('linesCount').textContent = linesGenerated;
+        }
+        
+        // Add files to list
+        function addFilesList(files) {
+            const filesList = document.getElementById('filesList');
+            files.forEach(file => {
+                const item = document.createElement('div');
+                item.className = 'file-item';
+                item.textContent = `📄 ${file.path}`;
+                filesList.insertBefore(item, filesList.firstChild);
+            });
+        }
+        
+        // Send on Enter (Ctrl+Enter for newline)
+        document.getElementById('userInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.ctrlKey && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+        
+        // Connect on load
+        connect();
+    </script>
+</body>
+</html>
