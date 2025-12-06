@@ -5,10 +5,10 @@ Provides the base Agent class for creating AI programming agents.
 """
 
 from __future__ import annotations
-from typing import Dict, Any, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, Any, Optional
 
 if TYPE_CHECKING:
-    from .task import Task
+    from agentfoundry.task import Task
 
 
 class Agent:
