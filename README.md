@@ -1,17 +1,17 @@
-# 🚀 AI Copilot Pro - Complete GenSpark AI Suite
+# 🚀 GenSpark 2.0 - Complete AI Development Platform
 
 <div align="center">
 
-![AI Copilot Pro](https://img.shields.io/badge/AI-Copilot_Pro-blue?style=for-the-badge&logo=openai)
+![AI Copilot Pro](https://img.shields.io/badge/GenSpark-2.0-blue?style=for-the-badge&logo=openai)
 ![License](https://img.shields.io/badge/license-ISC-green?style=for-the-badge)
 ![Node](https://img.shields.io/badge/node-%3E%3D16.0.0-brightgreen?style=for-the-badge&logo=node.js)
 ![Offline](https://img.shields.io/badge/100%25-Offline-orange?style=for-the-badge)
 ![Open Source](https://img.shields.io/badge/Open-Source-red?style=for-the-badge&logo=github)
 
-**The Ultimate AI Coding Assistant**  
-GitHub Copilot + GenSpark AI + 100% Offline + Universal Installation
+**The Ultimate Integrated AI Platform**  
+Forge Spark MVP + GenSpark 2.0 + AgentFoundry + 100% Offline + Universal Installation
 
-[🌐 Live Demo](https://3002-ibkwqvk5kfduhha5af04b-b9b802c4.sandbox.novita.ai) | [📖 Docs](./INSTALL.md) | [🌟 Features](./GENSPARK_FEATURES.md) | [🔧 API](https://3001-ibkwqvk5kfduhha5af04b-b9b802c4.sandbox.novita.ai/api)
+[🌐 Live Demo](https://3002-ibkwqvk5kfduhha5af04b-b9b802c4.sandbox.novita.ai) | [📖 Integration Guide](./GENSPARK_2.0_INTEGRATION.md) | [🌟 Features](./GENSPARK_FEATURES.md) | [🔧 API](https://3001-ibkwqvk5kfduhha5af04b-b9b802c4.sandbox.novita.ai/api)
 
 </div>
 
@@ -19,13 +19,67 @@ GitHub Copilot + GenSpark AI + 100% Offline + Universal Installation
 
 ## 🌟 What Makes This Special?
 
-This is **NOT just another coding assistant**. This is a **complete, professional-grade AI suite** that:
+This is **NOT just another AI platform**. This is a **complete, integrated AI ecosystem** that combines:
 
-✅ **Matches GitHub Copilot** (and exceeds it with offline capability)  
-✅ **Includes ALL GenSpark AI features** (multi-modal, web search, workflows)  
-✅ **Works 100% Offline** (no internet, no API keys, complete privacy)  
-✅ **Installs on ANY System** (ONE command: Linux, macOS, Windows)  
-✅ **Completely Free & Open Source** (no subscriptions, no limits)
+✅ **Forge Spark MVP** - Advanced code completion, reverse engineering, game tools  
+✅ **GenSpark 2.0** - Complete workspace suite, media generation, GGUF support  
+✅ **AgentFoundry** - Base platform with authentication, RAG, WebSocket streaming  
+✅ **100% Offline Capable** - Full functionality without internet  
+✅ **Cross-Platform** - Optimized for Linux, works on all major platforms  
+✅ **Extensible Architecture** - Easy to add new features and plugins  
+✅ **Completely Free & Open Source** - No subscriptions, no limits
+
+---
+
+## 🎉 Integrated Features
+
+### **🔥 From Forge Spark MVP**
+
+#### **Code Intelligence**
+- ✅ **AI Code Completion** - Multi-language support (13+ languages)
+- ✅ **Code Analysis** - Quality metrics, complexity scoring
+- ✅ **Code Refactoring** - Automated improvements
+- ✅ **GitHub Copilot Alternative** - FREE, offline-capable
+
+#### **Game Reverse Engineering**
+- ✅ **MPQ Extractor** - Extract Blizzard game archives
+- ✅ **CASC Extractor** - Modern Blizzard format support
+- ✅ **Texture Upscaler** - AI-powered texture enhancement
+- ✅ **Model Converter** - Convert 3D game models
+
+#### **Binary Reverse Engineering**
+- ✅ **x86/x64 Disassembler** - Disassemble binaries
+- ✅ **Debugger Support** - Advanced debugging (planned)
+- ✅ **Decompiler** - High-level code reconstruction (planned)
+
+### **🚀 From GenSpark 2.0**
+
+#### **AI Workspace Suite**
+- ✅ **AI Slides** - Professional presentations with AI
+- ✅ **AI Docs** - Document creation and editing
+- ✅ **AI Sheets** - Spreadsheet with AI formulas
+- ✅ **AI Designer** - Graphic design tools (planned)
+
+#### **Media Generation**
+- ✅ **Image Generation** - AI-powered images (Stable Diffusion)
+- ✅ **Video Generation** - Text/image-to-video
+- ✅ **Audio Generation** - TTS, music, sound effects
+- ✅ **GIF Creation** - Animated GIF maker
+
+#### **AI Engine**
+- ✅ **GGUF Support** - Run GGUF models offline
+- ✅ **Offline Mode** - Full local AI processing
+- ✅ **Online Mode** - Cloud AI enhancement
+- ✅ **Hybrid Mode** - Smart auto-switching
+
+### **⚡ From AgentFoundry-instantly**
+
+#### **Core Platform**
+- ✅ **Authentication** - JWT + API keys
+- ✅ **Vector Database** - RAG with semantic search
+- ✅ **WebSocket Streaming** - Real-time responses
+- ✅ **Chat Interface** - Professional ChatGPT-style UI
+- ✅ **Conversation Management** - Save/load/export chats
 
 ---
 
