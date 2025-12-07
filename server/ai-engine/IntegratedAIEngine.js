@@ -41,7 +41,7 @@ class IntegratedAIEngine {
     try {
       // Initialize offline engine (always available)
       if (config.aiEngines.primary.offline.enabled) {
-        const { default: OfflineGenSparkAI } = await import('./OfflineGenSparkAI.js');
+        const OfflineGenSparkAI = require('./OfflineGenSparkAI');
         this.engines.offline = new OfflineGenSparkAI();
         await this.engines.offline.initialize({ devMode: config.features.devMode });
         console.log('   ✅ Offline AI Engine ready');

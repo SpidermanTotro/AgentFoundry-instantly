@@ -24,6 +24,8 @@
     "platform:offline": "AI_MODE=offline node start-genspark-platform.js",
     "platform:online": "AI_MODE=online node start-genspark-platform.js",
     "platform:hybrid": "AI_MODE=hybrid node start-genspark-platform.js",
+    "setup": "./setup.sh",
+    "test:api": "node test-api.js",
     "electron": "electron .",
     "electron:dev": "concurrently \"npm run server\" \"wait-on http://localhost:3001 && electron .\"",
     "electron:build": "npm run build && electron-builder",
