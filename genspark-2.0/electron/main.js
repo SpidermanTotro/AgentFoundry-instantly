@@ -28,7 +28,7 @@ function createWindow() {
       webSecurity: true
     },
     backgroundColor: '#1e1e1e',
-    title: 'GenSpark 2.0 - Complete Offline AI Platform'
+    title: 'GenSpark 2.0 - Complete Unified AI Platform (All Features Integrated)'
   });
 
   // Load app
@@ -160,8 +160,8 @@ function createMenu() {
             dialog.showMessageBox(mainWindow, {
               type: 'info',
               title: 'About GenSpark 2.0',
-              message: 'GenSpark 2.0',
-              detail: 'Complete Offline AI Platform\nVersion 2.0.0\n\n100% FREE & Open Source\n\nFeatures:\n• AI Workspace Suite\n• Image/Video/Audio/GIF Generation\n• Code Completion\n• Document Processing\n• And Much More!'
+              message: 'GenSpark 2.0 Unified Edition',
+              detail: 'Complete Unified AI Platform\nVersion 2.0.0\n\n100% FREE & Open Source\n\nIntegrated Features:\n• 7 AI Engines (Local, GenSpark, CodeIntelligence, Plugin, Complete, ChatGPT2, Offline)\n• AI Workspace Suite (Slides, Docs, Sheets, Designer)\n• Media Generation (Image, Video, Audio, GIF)\n• Code Intelligence & Completion\n• Authentication & Vector Database\n• WebSocket Real-time Streaming\n• 100% Offline Capable\n\nAll AgentFoundry-instantly features in ONE platform!'
             });
           }
         }
@@ -174,9 +174,12 @@ function createMenu() {
 }
 
 function startServer() {
-  console.log('Starting GenSpark 2.0 server...');
+  console.log('Starting GenSpark 2.0 Unified Server...');
   
-  serverProcess = spawn('node', [path.join(__dirname, '../src/server.js')], {
+  // Use unified-server.js for complete feature integration
+  const serverPath = path.join(__dirname, '../src/unified-server.js');
+  
+  serverProcess = spawn('node', [serverPath], {
     env: { ...process.env, PORT: SERVER_PORT }
   });
 
