@@ -77,13 +77,27 @@ class GenSpark2Integration {
   }
 
   /**
+   * Helper to check if a file exists
+   * @param {string} filePath - Path to check
+   * @returns {Promise<boolean>} True if file exists
+   */
+  async fileExists(filePath) {
+    try {
+      await fs.access(filePath);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
    * Initialize AI engines with GGUF support
    */
   async initializeAIEngines() {
     try {
       // Try to load GenSpark 2.0 AI engine
       const aiEnginePath = path.join(this.genspark2Path, 'src/ai/engine.js');
-      const exists = await fs.access(aiEnginePath).then(() => true).catch(() => false);
+      const exists = await this.fileExists(aiEnginePath);
       
       if (exists) {
         this.aiEngine = require(aiEnginePath);
@@ -92,7 +106,7 @@ class GenSpark2Integration {
 
       // Try to load GGUF engine
       const ggufEnginePath = path.join(this.genspark2Path, 'src/ai/gguf-engine.js');
-      const ggufExists = await fs.access(ggufEnginePath).then(() => true).catch(() => false);
+      const ggufExists = await this.fileExists(ggufEnginePath);
       
       if (ggufExists) {
         this.ggufEngine = require(ggufEnginePath);
@@ -115,7 +129,7 @@ class GenSpark2Integration {
       
       for (const module of modules) {
         const modulePath = path.join(toolsPath, `${module}.js`);
-        const exists = await fs.access(modulePath).then(() => true).catch(() => false);
+        const exists = await this.fileExists(modulePath);
         
         if (exists) {
           this.workspaceTools[module] = require(modulePath);
@@ -139,7 +153,7 @@ class GenSpark2Integration {
       
       for (const gen of generators) {
         const genPath = path.join(mediaPath, gen, 'generator.js');
-        const exists = await fs.access(genPath).then(() => true).catch(() => false);
+        const exists = await this.fileExists(genPath);
         
         if (exists) {
           this.mediaGenerators[gen] = require(genPath);

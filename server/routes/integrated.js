@@ -373,7 +373,7 @@ router.get('/capabilities', (req, res) => {
 
 /**
  * GET /api/integrated/
- * API info
+ * Get comprehensive API information and available endpoints
  */
 router.get('/', (req, res) => {
   res.json({

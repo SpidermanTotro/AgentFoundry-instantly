@@ -138,8 +138,17 @@ class ForgesparkIntegration {
     // Pattern-based completion
     if (language === 'python') {
       if (lastLine.includes('def ') && lastLine.endsWith('(')) {
-        completion.text = 'self):';
-        completion.suggestions = ['self):', 'self, *args, **kwargs):'];
+        // Check if it's likely a method (inside a class) or a standalone function
+        const prevLines = lines.slice(0, -1).filter(l => l.trim());
+        const isInsideClass = prevLines.some(l => l.match(/^class\s+/));
+        
+        if (isInsideClass) {
+          completion.text = 'self):';
+          completion.suggestions = ['self):', 'self, *args, **kwargs):'];
+        } else {
+          completion.text = '):';
+          completion.suggestions = ['):', '*args, **kwargs):'];
+        }
       } else if (lastLine.includes('class ') && lastLine.endsWith(':')) {
         completion.text = '\n    def __init__(self):';
       } else if (lastLine.includes('if ') && lastLine.endsWith(':')) {

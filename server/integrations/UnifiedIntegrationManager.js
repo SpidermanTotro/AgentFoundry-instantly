@@ -112,6 +112,7 @@ class UnifiedIntegrationManager {
 
   /**
    * Get AI code completion (unified)
+   * Tries Forge Spark first, then falls back to GenSpark 2.0 text generation
    */
   async getCodeCompletion(code, language = 'python', options = {}) {
     // Try Forge Spark first (specialized for code)
@@ -119,12 +120,19 @@ class UnifiedIntegrationManager {
       return await this.integrations.forgespark.getCodeCompletion(code, language);
     } catch (error) {
       console.warn('Forge Spark completion failed, trying GenSpark 2.0...');
-      // Fallback to GenSpark 2.0
+      // Fallback to GenSpark 2.0 with normalized response format
       const prompt = `Complete this ${language} code:\n${code}`;
-      return await this.integrations.genspark2.generateText(prompt, { 
+      const result = await this.integrations.genspark2.generateText(prompt, { 
         ...options, 
         maxTokens: 100 
       });
+      
+      // Normalize response to match expected format
+      return {
+        text: result.text || '',
+        confidence: 0.7,
+        suggestions: [result.text || '']
+      };
     }
   }
 
