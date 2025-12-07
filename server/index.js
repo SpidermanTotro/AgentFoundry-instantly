@@ -115,11 +115,19 @@ app.post('/api/chat', async (req, res) => {
   try {
     const { message, history, stream = false } = req.body;
     
+    // Wait for initialization with timeout
+    if (!aiEngine.initialized) {
+      const timeout = Date.now() + 5000; // 5 second timeout
+      while (!aiEngine.initialized && Date.now() < timeout) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+
     if (!aiEngine.initialized) {
       return res.json({
         success: true,
         message: `Echo: ${message}`,
-        info: 'AI Engine initializing... This is an echo response.',
+        info: 'AI Engine still initializing... This is an echo response.',
         mode: 'echo',
         timestamp: new Date().toISOString()
       });
@@ -187,10 +195,18 @@ app.post('/api/generate-code', async (req, res) => {
   try {
     const { prompt, language = 'javascript', options = {} } = req.body;
     
+    // Wait for initialization with timeout
+    if (!aiEngine.initialized) {
+      const timeout = Date.now() + 5000;
+      while (!aiEngine.initialized && Date.now() < timeout) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+
     if (!aiEngine.initialized) {
       return res.json({
         success: false,
-        error: 'AI Engine initializing...'
+        error: 'AI Engine still initializing...'
       });
     }
 

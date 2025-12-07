@@ -62,10 +62,22 @@ class GenSparkPlatform {
   async waitForHealthy(port, path = '/api/health', maxAttempts = 30) {
     for (let i = 0; i < maxAttempts; i++) {
       try {
-        const response = await fetch(`http://localhost:${port}${path}`);
-        if (response.ok) {
-          return true;
-        }
+        // Use http module for compatibility with older Node versions
+        await new Promise((resolve, reject) => {
+          const req = http.get(`http://localhost:${port}${path}`, (res) => {
+            if (res.statusCode === 200) {
+              resolve();
+            } else {
+              reject(new Error(`Status ${res.statusCode}`));
+            }
+          });
+          req.on('error', reject);
+          req.setTimeout(1000, () => {
+            req.destroy();
+            reject(new Error('Timeout'));
+          });
+        });
+        return true;
       } catch (error) {
         // Service not ready yet
       }

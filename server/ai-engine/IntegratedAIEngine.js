@@ -15,6 +15,8 @@
 
 const config = require('../../genspark-integration.config');
 const NodeCache = require('node-cache');
+const crypto = require('crypto');
+const path = require('path');
 
 class IntegratedAIEngine {
   constructor() {
@@ -50,7 +52,9 @@ class IntegratedAIEngine {
       // Initialize GGUF engine if enabled
       if (config.aiEngines.gguf.enabled) {
         try {
-          const { GGUFEngine } = require('../../genspark-2.0/src/ai/gguf-engine.js');
+          // Use dynamic path resolution for better maintainability
+          const ggufEnginePath = path.resolve(__dirname, '../../genspark-2.0/src/ai/gguf-engine.js');
+          const { GGUFEngine } = require(ggufEnginePath);
           this.engines.gguf = new GGUFEngine();
           
           // Try to initialize with default model
@@ -485,7 +489,6 @@ class IntegratedAIEngine {
    * Generate cache key
    */
   _getCacheKey(type, input, options) {
-    const crypto = require('crypto');
     const data = JSON.stringify({ type, input, options });
     return crypto.createHash('md5').update(data).digest('hex');
   }
