@@ -226,7 +226,8 @@ I'm your ultimate AI assistant with **ZERO RESTRICTIONS** and **ALL FEATURES**:
   };
 
   const chatWithAI = async (message) => {
-    const response = await fetch('/api/chat', {
+    // Use unified server API endpoint
+    const response = await fetch('/api/ai/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

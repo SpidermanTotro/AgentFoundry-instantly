@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 
-export const useWebSocket = (url = 'http://localhost:3001') => {
+// Use unified server port (3000) instead of original separate server port
+export const useWebSocket = (url = 'http://localhost:3000') => {
   const [isConnected, setIsConnected] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState('');
   const [error, setError] = useState(null);

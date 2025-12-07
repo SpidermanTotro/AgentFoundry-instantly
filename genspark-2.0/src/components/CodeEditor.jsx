@@ -4,6 +4,7 @@ import CodeAssistant from './CodeAssistant';
 import ChatPanel from './ChatPanel';
 import StatusBar from './StatusBar';
 import SkillsPanel from './SkillsPanel';
+import ChatGPT2 from './ChatGPT2'; // Add import for ChatGPT2
 import '../App.css';
 
 function CodeEditor() {

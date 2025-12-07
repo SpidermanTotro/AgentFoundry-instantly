@@ -5,12 +5,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 3000,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:3000',
-        changeOrigin: true,
-      },
-    },
+    // Proxy removed - unified server handles both frontend and API on same port
   },
   build: {
     outDir: 'dist',
