@@ -15,9 +15,13 @@ const { Server } = require('socket.io');
 const authService = require('./services/AuthService');
 const vectorDB = require('./services/VectorDB');
 
+// Import AI Orchestrator
+const UnifiedAIOrchestrator = require('./ai-engine/UnifiedAIOrchestrator');
+
 // Import routes
 const authRoutes = require('./routes/auth');
 const vectordbRoutes = require('./routes/vectordb');
+const unifiedRoutes = require('./routes/unified');
 
 // Load environment
 dotenv.config();
@@ -52,7 +56,30 @@ app.use((req, res, next) => {
 });
 
 // Initialize services
-console.log('\n🚀 ChatGPT 2.0 UNRESTRICTED - Complete Server Starting...\n');
+console.log('\n🚀 GenSpark 2.0 UNIFIED - Complete Server Starting...\n');
+
+// Initialize Unified AI Orchestrator
+let unifiedOrchestrator = null;
+
+(async () => {
+  try {
+    unifiedOrchestrator = new UnifiedAIOrchestrator();
+    await unifiedOrchestrator.initialize({
+      googleApiKey: process.env.GOOGLE_API_KEY,
+      anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+      cohereApiKey: process.env.COHERE_API_KEY,
+      githubToken: process.env.GITHUB_TOKEN,
+      aiProviders: {}
+    });
+    
+    // Set orchestrator in unified routes
+    unifiedRoutes.setOrchestrator(unifiedOrchestrator);
+    
+    console.log('✅ Unified AI Orchestrator initialized');
+  } catch (error) {
+    console.error('⚠️  Orchestrator initialization error:', error.message);
+  }
+})();
 
 (async () => {
   try {
@@ -75,19 +102,27 @@ console.log('\n🚀 ChatGPT 2.0 UNRESTRICTED - Complete Server Starting...\n');
 // Mount API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/vectordb', vectordbRoutes);
+app.use('/api/unified', unifiedRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
-    message: 'ChatGPT 2.0 UNRESTRICTED - All Systems Ready',
+    message: 'GenSpark 2.0 UNIFIED - All Systems Ready',
     timestamp: new Date().toISOString(),
     features: {
       authentication: true,
       vectorDatabase: true,
       websocket: true,
       rag: true,
-      streaming: true
+      streaming: true,
+      unifiedAI: unifiedOrchestrator ? unifiedOrchestrator.initialized : false,
+      engines: {
+        chatgpt2: true,
+        kimi: true,
+        genspark: true,
+        local: true
+      }
     },
     server: {
       port: PORT,
@@ -250,20 +285,32 @@ app.use((req, res) => {
 // Start server
 server.listen(PORT, () => {
   console.log('\n═══════════════════════════════════════════════════════════');
-  console.log('  🚀 ChatGPT 2.0 UNRESTRICTED - Server ONLINE');
+  console.log('  🚀 GenSpark 2.0 UNIFIED - Server ONLINE');
   console.log('═══════════════════════════════════════════════════════════');
-  console.log(`\n  Mode: Complete Unified Server`);
+  console.log(`\n  Mode: Unified AI Platform (ChatGPT 2.0 + Kimi + GenSpark)`);
   console.log(`  Port: ${PORT}`);
   console.log(`  Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log('\n  ✅ AI Engines:');
+  console.log('     • ChatGPT 2.0 UNRESTRICTED (chat, GitHub, files)');
+  console.log('     • Kimi AI (long context, documents, math)');
+  console.log('     • GenSpark AI (multi-modal, generation)');
+  console.log('     • Local AI Engine (offline mode)');
   console.log('\n  ✅ Features Enabled:');
+  console.log('     • Intelligent Routing (auto-detect best engine)');
+  console.log('     • 200K Token Context (Kimi)');
+  console.log('     • Document Analysis (PDF, DOCX)');
+  console.log('     • Mathematical Computation');
+  console.log('     • GitHub Integration');
+  console.log('     • File System Operations');
+  console.log('     • Multi-modal Generation');
   console.log('     • Authentication (JWT + API Keys)');
   console.log('     • Vector Database (RAG)');
   console.log('     • WebSocket Streaming');
-  console.log('     • Real-time Chat');
-  console.log('     • Multi-modal Support');
   console.log('\n  📡 Endpoints:');
   console.log(`     • API: http://localhost:${PORT}/api`);
   console.log(`     • Health: http://localhost:${PORT}/api/health`);
+  console.log(`     • Unified: http://localhost:${PORT}/api/unified`);
+  console.log(`     • Capabilities: http://localhost:${PORT}/api/unified/capabilities`);
   console.log(`     • Auth: http://localhost:${PORT}/api/auth`);
   console.log(`     • Vector DB: http://localhost:${PORT}/api/vectordb`);
   console.log(`     • WebSocket: ws://localhost:${PORT}`);
