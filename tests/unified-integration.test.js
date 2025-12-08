@@ -20,7 +20,7 @@ class UnifiedPlatformTests {
 
   async runAllTests() {
     console.log('\n🧪 Starting GenSpark 2.0 Unified Platform Tests\n');
-    console.log('=' .repeat(60));
+    console.log('='.repeat(60));
 
     await this.testHealthCheck();
     await this.testCapabilities();

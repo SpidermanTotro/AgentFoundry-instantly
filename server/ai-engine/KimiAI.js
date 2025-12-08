@@ -312,6 +312,7 @@ class KimiAI {
 
   /**
    * Code interpreter (Kimi feature)
+   * Note: Uses safer vm module for JavaScript execution
    */
   async interpretCode(code, language = 'javascript', options = {}) {
     try {
@@ -320,19 +321,40 @@ class KimiAI {
         sandbox = true
       } = options;
 
-      // For JavaScript code execution
+      // For JavaScript code execution using safer vm module
       if (language === 'javascript') {
-        // Simple safe evaluation
-        const result = eval(code);
+        try {
+          const vm = require('vm');
+          const script = new vm.Script(code);
+          const context = vm.createContext({
+            console: console,
+            // Add safe globals if needed
+          });
+          
+          const result = script.runInContext(context, {
+            timeout: timeout,
+            displayErrors: true
+          });
 
-        return {
-          success: true,
-          code: code,
-          language: language,
-          output: result,
-          executionTime: Date.now(),
-          capability: 'Code interpretation with sandboxing'
-        };
+          return {
+            success: true,
+            code: code,
+            language: language,
+            output: result,
+            executionTime: Date.now(),
+            capability: 'Code interpretation with sandboxing (vm module)'
+          };
+        } catch (vmError) {
+          // Fallback to simple return for very basic expressions
+          return {
+            success: false,
+            code: code,
+            language: language,
+            error: vmError.message,
+            note: 'Code execution failed - use a safer execution environment for untrusted code',
+            capability: 'Code interpretation (sandboxed)'
+          };
+        }
       }
 
       // For other languages, provide simulation
