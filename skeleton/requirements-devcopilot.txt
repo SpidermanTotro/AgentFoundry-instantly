@@ -1,0 +1,9 @@
+# Dev Copilot specific dependencies
+
+# Core dependencies
+pathlib>=1.0.1
+
+# Optional: Local LLM support (disabled by default)
+# Uncomment if you want to use local LLMs:
+# llama-cpp-python>=0.2.0
+# gpt4all>=2.0.0

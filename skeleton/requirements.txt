@@ -1,0 +1,12 @@
+# Python dependencies for skeleton tools
+
+# Web framework
+streamlit>=1.28.0
+
+# Data handling
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Utilities
+python-dateutil>=2.8.0
+requests>=2.31.0

@@ -1,0 +1,108 @@
+name: Repository Health Check
+
+on:
+  schedule:
+    # Run weekly on Sunday at midnight UTC
+    - cron: '0 0 * * 0'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Check repository activity
+        id: check
+        run: |
+          # Get last commit date
+          LAST_COMMIT_DATE=$(git log -1 --format=%ct)
+          CURRENT_DATE=$(date +%s)
+          
+          # Calculate days since last commit
+          DAYS_INACTIVE=$(( ($CURRENT_DATE - $LAST_COMMIT_DATE) / 86400 ))
+          
+          echo "days_inactive=$DAYS_INACTIVE" >> $GITHUB_OUTPUT
+          echo "Last commit was $DAYS_INACTIVE days ago"
+          
+          # Check if repository is stale (30+ days)
+          if [ $DAYS_INACTIVE -ge 30 ]; then
+            echo "is_stale=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_stale=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Create update issue
+        if: steps.check.outputs.is_stale == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const daysInactive = '${{ steps.check.outputs.days_inactive }}';
+            
+            // Check if similar issue already exists
+            const existingIssues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'repo-health',
+              state: 'open'
+            });
+            
+            if (existingIssues.data.length > 0) {
+              console.log('Health check issue already exists, skipping creation');
+              return;
+            }
+            
+            // Create new issue
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Repository health check: ${daysInactive} days inactive`,
+              labels: ['repo-health', 'update-suggested'],
+              body: `## 🔍 Repository Health Check
+            
+            This repository has been inactive for **${daysInactive} days**.
+            
+            ### Recommendations
+            
+            Consider the following actions to keep the repository healthy:
+            
+            - [ ] Review and merge pending pull requests
+            - [ ] Update dependencies to latest versions
+            - [ ] Review and close stale issues
+            - [ ] Update documentation if needed
+            - [ ] Check for security vulnerabilities
+            - [ ] Archive repository if no longer maintained
+            
+            ### Auto-generated Information
+            
+            - **Days inactive**: ${daysInactive}
+            - **Staleness threshold**: 30 days
+            - **Check date**: ${new Date().toISOString().split('T')[0]}
+            
+            ### How to Disable This Check
+            
+            If you want to disable automated health checks:
+            
+            1. Delete \`.github/workflows/repo_health_check.yml\`, or
+            2. Adjust the staleness threshold in the workflow file, or
+            3. Change the cron schedule to run less frequently
+            
+            ---
+            
+            *This issue was automatically created by the Repository Health Check workflow.*
+            `
+            });
+            
+            console.log(`Created issue #${issue.data.number}`);
+      
+      - name: Repository is healthy
+        if: steps.check.outputs.is_stale == 'false'
+        run: |
+          echo "✅ Repository is healthy (active within last 30 days)"
