@@ -81,7 +81,8 @@ app.post('/api/endpoint', async (req, res) => {
 Example:
 ```javascript
 const Database = require('better-sqlite3');
-const db = new Database('data/app.db');
+const dbPath = process.env.DB_PATH || 'data/app.db';
+const db = new Database(dbPath);
 
 // Prepared statement
 const stmt = db.prepare('SELECT * FROM skills WHERE id = ?');

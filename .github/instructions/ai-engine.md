@@ -28,7 +28,7 @@ const traverse = require('@babel/traverse').default;
 function analyzeCode(code) {
   const ast = parser.parse(code, {
     sourceType: 'module',
-    plugins: ['jsx', 'typescript']
+    plugins: ['jsx']
   });
   
   const analysis = {
