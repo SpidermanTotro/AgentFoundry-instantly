@@ -1,5 +1,8 @@
 # 🚀 AI Copilot Pro - Complete GenSpark AI Suite
 
+> **🎉 NEW: All features now integrated into GenSpark 2.0 Unified!**  
+> **📂 See [genspark-2.0/](./genspark-2.0/) for the complete unified platform**
+
 <div align="center">
 
 ![AI Copilot Pro](https://img.shields.io/badge/AI-Copilot_Pro-blue?style=for-the-badge&logo=openai)
@@ -14,6 +17,35 @@ GitHub Copilot + GenSpark AI + 100% Offline + Universal Installation
 [🌐 Live Demo](https://3002-ibkwqvk5kfduhha5af04b-b9b802c4.sandbox.novita.ai) | [📖 Docs](./INSTALL.md) | [🌟 Features](./GENSPARK_FEATURES.md) | [🔧 API](https://3001-ibkwqvk5kfduhha5af04b-b9b802c4.sandbox.novita.ai/api)
 
 </div>
+
+---
+
+## 🎯 **GenSpark 2.0 Unified - All Features in ONE Platform**
+
+**ALL features from this repository have been integrated into GenSpark 2.0!**
+
+### 🚀 Quick Start with GenSpark 2.0 Unified
+
+```bash
+cd genspark-2.0
+npm install
+npm start
+# Access: http://localhost:3000
+```
+
+**What You Get:**
+- ✅ **All 7 AI Engines** (Local, GenSpark, CodeIntelligence, Plugin, Complete, ChatGPT2, Offline)
+- ✅ **Complete UI** (Chat, Code, Workspace, Media modes)
+- ✅ **All Features** (Code completion, media generation, workspace tools)
+- ✅ **Single Server** (One port, one deployment)
+- ✅ **100% Offline** (Privacy-first, air-gap compatible)
+
+### 📚 GenSpark 2.0 Documentation
+
+- **[README-UNIFIED.md](./genspark-2.0/README-UNIFIED.md)** - Complete feature documentation
+- **[INSTALL-UNIFIED.md](./genspark-2.0/INSTALL-UNIFIED.md)** - Installation guide
+- **[MIGRATION-GUIDE.md](./genspark-2.0/MIGRATION-GUIDE.md)** - Migration from root server
+- **[INTEGRATION-SUMMARY.md](./genspark-2.0/INTEGRATION-SUMMARY.md)** - Integration details
 
 ---
 
