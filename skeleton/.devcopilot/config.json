@@ -1,0 +1,39 @@
+{
+  "version": "1.0.0",
+  "enable_local_llm": false,
+  "llm_provider": "openai",
+  "model": "gpt-4",
+  "temperature": 0.7,
+  "max_tokens": 2048,
+  "offline_mode": true,
+  "template_directory": "dev_copilot_templates",
+  "output_directory": "generated",
+  "logging": {
+    "level": "INFO",
+    "file": "devcopilot.log",
+    "console": true
+  },
+  "features": {
+    "code_generation": true,
+    "template_scaffolding": true,
+    "auto_documentation": false,
+    "syntax_checking": true,
+    "style_enforcement": true
+  },
+  "templates": {
+    "agent_stub": "dev_copilot_templates/agent_stub.py",
+    "metadata": "dev_copilot_templates/metadata.py",
+    "read_helper": "dev_copilot_templates/read_helper.py"
+  },
+  "security": {
+    "allow_network": false,
+    "allow_file_write": true,
+    "sandbox_mode": false,
+    "validate_imports": true
+  },
+  "editor_integration": {
+    "vscode": false,
+    "vim": false,
+    "emacs": false
+  }
+}

@@ -1,0 +1,118 @@
+name: Repository Health Check
+on:
+  schedule:
+    # Run daily at 00:00 UTC
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  check-repo-health:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Check repository staleness
+        id: staleness-check
+        run: |
+          # Get the date of the last commit
+          LAST_COMMIT_DATE=$(git log -1 --format=%ci)
+          LAST_COMMIT_TIMESTAMP=$(date -d "$LAST_COMMIT_DATE" +%s)
+          CURRENT_TIMESTAMP=$(date +%s)
+          
+          # Calculate days since last commit
+          SECONDS_DIFF=$((CURRENT_TIMESTAMP - LAST_COMMIT_TIMESTAMP))
+          DAYS_DIFF=$((SECONDS_DIFF / 86400))
+          
+          echo "Days since last commit: $DAYS_DIFF"
+          echo "days_since_commit=$DAYS_DIFF" >> $GITHUB_OUTPUT
+          
+          # Staleness threshold (30 days)
+          STALENESS_THRESHOLD=30
+          
+          if [ $DAYS_DIFF -gt $STALENESS_THRESHOLD ]; then
+            echo "Repository is stale (inactive for $DAYS_DIFF days)"
+            echo "is_stale=true" >> $GITHUB_OUTPUT
+          else
+            echo "Repository is active"
+            echo "is_stale=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Check for existing health check issue
+        id: check-existing-issue
+        if: steps.staleness-check.outputs.is_stale == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'repo-health,update-suggested'
+            });
+            
+            const hasExistingIssue = issues.data.length > 0;
+            console.log(`Existing health check issues: ${issues.data.length}`);
+            
+            return hasExistingIssue;
+          result-encoding: string
+      
+      - name: Create repository health issue
+        if: steps.staleness-check.outputs.is_stale == 'true' && steps.check-existing-issue.outputs.result == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const daysSinceCommit = '${{ steps.staleness-check.outputs.days_since_commit }}';
+            
+            const issueBody = `## Repository Health Check Alert
+            
+            This repository has been inactive for **${daysSinceCommit} days**.
+            
+            ### Recommended Actions
+            
+            - [ ] Review and update dependencies
+            - [ ] Check for security vulnerabilities
+            - [ ] Update documentation
+            - [ ] Review open issues and PRs
+            - [ ] Update README if needed
+            - [ ] Consider archiving if no longer maintained
+            
+            ### Health Check Details
+            
+            - **Last Activity**: ${daysSinceCommit} days ago
+            - **Staleness Threshold**: 30 days
+            - **Check Date**: ${new Date().toISOString().split('T')[0]}
+            
+            ### Next Steps
+            
+            1. Review the items in the checklist above
+            2. Take appropriate action to update the repository
+            3. Close this issue once updates are complete
+            
+            ---
+            
+            *This issue was automatically created by the Repository Health Check workflow.*
+            *To disable these checks, remove or modify \`.github/workflows/repo_health_check.yml\`*
+            `;
+            
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Repository Health: Update Suggested (${daysSinceCommit} days inactive)`,
+              body: issueBody,
+              labels: ['repo-health', 'update-suggested']
+            });
+            
+            console.log('Health check issue created successfully');
+      
+      - name: Log completion
+        run: |
+          echo "Repository health check completed"
+          echo "Stale: ${{ steps.staleness-check.outputs.is_stale }}"
+          echo "Days since last commit: ${{ steps.staleness-check.outputs.days_since_commit }}"
