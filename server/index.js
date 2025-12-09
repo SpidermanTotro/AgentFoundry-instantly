@@ -18,6 +18,10 @@ const vectorDB = require('./services/VectorDB');
 // Import routes
 const authRoutes = require('./routes/auth');
 const vectordbRoutes = require('./routes/vectordb');
+const integratedRoutes = require('./routes/integrated');
+
+// Import unified integration manager
+const unifiedIntegration = require('./integrations/UnifiedIntegrationManager');
 
 // Load environment
 dotenv.config();
@@ -72,22 +76,36 @@ console.log('\n🚀 ChatGPT 2.0 UNRESTRICTED - Complete Server Starting...\n');
   }
 })();
 
+// Initialize unified integration (Forge Spark + GenSpark 2.0)
+(async () => {
+  try {
+    await unifiedIntegration.initialize();
+  } catch (error) {
+    console.error('⚠️  Integration warning:', error.message);
+  }
+})();
+
 // Mount API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/vectordb', vectordbRoutes);
+app.use('/api/integrated', integratedRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
+  const integrationStatus = unifiedIntegration.getStatus();
+  
   res.json({
     status: 'ok',
-    message: 'ChatGPT 2.0 UNRESTRICTED - All Systems Ready',
+    message: 'GenSpark 2.0 - Complete Integrated Platform Ready',
     timestamp: new Date().toISOString(),
     features: {
       authentication: true,
       vectorDatabase: true,
       websocket: true,
       rag: true,
-      streaming: true
+      streaming: true,
+      forgesparkIntegration: integrationStatus.integrations.forgespark.initialized,
+      genspark2Integration: integrationStatus.integrations.genspark2.initialized
     },
     server: {
       port: PORT,
