@@ -15,6 +15,10 @@ const { Server } = require('socket.io');
 const authService = require('./services/AuthService');
 const vectorDB = require('./services/VectorDB');
 
+// Import AI Engine
+const IntegratedAIEngine = require('./ai-engine/IntegratedAIEngine');
+const aiEngine = new IntegratedAIEngine();
+
 // Import routes
 const authRoutes = require('./routes/auth');
 const vectordbRoutes = require('./routes/vectordb');
@@ -72,6 +76,16 @@ console.log('\n🚀 ChatGPT 2.0 UNRESTRICTED - Complete Server Starting...\n');
   }
 })();
 
+// Initialize Integrated AI Engine
+(async () => {
+  try {
+    await aiEngine.initialize();
+    console.log('✅ Integrated AI Engine initialized');
+  } catch (error) {
+    console.error('⚠️  AI Engine warning:', error.message);
+  }
+})();
+
 // Mount API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/vectordb', vectordbRoutes);
@@ -101,15 +115,38 @@ app.post('/api/chat', async (req, res) => {
   try {
     const { message, history, stream = false } = req.body;
     
-    // For now, echo response (AI providers need API keys)
-    const response = {
-      success: true,
-      message: `Echo: ${message}`,
-      info: 'Add API keys in .env for full AI responses',
-      timestamp: new Date().toISOString()
-    };
+    // Wait for initialization with timeout
+    if (!aiEngine.initialized) {
+      const timeout = Date.now() + 5000; // 5 second timeout
+      while (!aiEngine.initialized && Date.now() < timeout) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+
+    if (!aiEngine.initialized) {
+      return res.json({
+        success: true,
+        message: `Echo: ${message}`,
+        info: 'AI Engine still initializing... This is an echo response.',
+        mode: 'echo',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Generate response using integrated AI engine
+    const result = await aiEngine.generateText(message, {
+      history,
+      maxTokens: 512
+    });
     
-    res.json(response);
+    res.json({
+      success: true,
+      message: result.text || result.response || 'No response generated',
+      engine: result.engine,
+      responseTime: result.responseTime,
+      cached: result.cached,
+      timestamp: new Date().toISOString()
+    });
   } catch (error) {
     console.error('Chat error:', error);
     res.status(500).json({
@@ -122,14 +159,72 @@ app.post('/api/chat', async (req, res) => {
 // Generate image endpoint
 app.post('/api/generate-image', async (req, res) => {
   try {
-    const { prompt } = req.body;
+    const { prompt, width = 512, height = 512, style } = req.body;
+    
+    if (!aiEngine.initialized) {
+      return res.json({
+        success: false,
+        error: 'AI Engine initializing...'
+      });
+    }
+
+    const result = await aiEngine.generateImage(prompt, {
+      width,
+      height,
+      style
+    });
+    
     res.json({
       success: true,
-      message: 'Image generation requires API keys (DALL-E, Stable Diffusion)',
-      prompt
+      image: result.image || result.data,
+      engine: result.engine,
+      responseTime: result.responseTime,
+      cached: result.cached,
+      metadata: result.metadata
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ 
+      success: false,
+      error: error.message 
+    });
+  }
+});
+
+// Generate code endpoint
+app.post('/api/generate-code', async (req, res) => {
+  try {
+    const { prompt, language = 'javascript', options = {} } = req.body;
+    
+    // Wait for initialization with timeout
+    if (!aiEngine.initialized) {
+      const timeout = Date.now() + 5000;
+      while (!aiEngine.initialized && Date.now() < timeout) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+
+    if (!aiEngine.initialized) {
+      return res.json({
+        success: false,
+        error: 'AI Engine still initializing...'
+      });
+    }
+
+    const result = await aiEngine.generateCode(prompt, language, options);
+    
+    res.json({
+      success: true,
+      code: result.text || result.code,
+      language,
+      engine: result.engine,
+      responseTime: result.responseTime,
+      cached: result.cached
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false,
+      error: error.message 
+    });
   }
 });
 
@@ -164,15 +259,117 @@ app.post('/api/generate-audio', async (req, res) => {
 // Web search endpoint
 app.post('/api/search', async (req, res) => {
   try {
-    const { query } = req.body;
+    const { query, limit = 10 } = req.body;
+    
+    if (!aiEngine.initialized) {
+      return res.json({
+        success: false,
+        error: 'AI Engine initializing...'
+      });
+    }
+
+    const result = await aiEngine.search(query, { limit });
+    
     res.json({
       success: true,
-      message: 'Web search requires SERP API key',
-      query,
-      results: []
+      results: result.results || [],
+      engine: result.engine,
+      responseTime: result.responseTime,
+      cached: result.cached,
+      query
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ 
+      success: false,
+      error: error.message 
+    });
+  }
+});
+
+// Process document endpoint
+app.post('/api/process-document', async (req, res) => {
+  try {
+    const { content, type = 'text', options = {} } = req.body;
+    
+    if (!aiEngine.initialized) {
+      return res.json({
+        success: false,
+        error: 'AI Engine initializing...'
+      });
+    }
+
+    const result = await aiEngine.processDocument(content, type, options);
+    
+    res.json({
+      success: true,
+      processed: result.processed || result,
+      engine: result.engine,
+      responseTime: result.responseTime,
+      cached: result.cached
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false,
+      error: error.message 
+    });
+  }
+});
+
+// AI Engine stats endpoint
+app.get('/api/ai/stats', (req, res) => {
+  try {
+    const stats = aiEngine.getStats();
+    res.json({
+      success: true,
+      stats
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Set AI mode endpoint
+app.post('/api/ai/mode', (req, res) => {
+  try {
+    const { mode } = req.body;
+    const success = aiEngine.setMode(mode);
+    
+    if (success) {
+      res.json({
+        success: true,
+        mode: aiEngine.mode,
+        message: `AI mode set to ${mode}`
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: 'Invalid mode. Use: offline, online, or hybrid'
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Clear cache endpoint
+app.post('/api/ai/cache/clear', (req, res) => {
+  try {
+    aiEngine.clearCache();
+    res.json({
+      success: true,
+      message: 'Cache cleared successfully'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
   }
 });
 

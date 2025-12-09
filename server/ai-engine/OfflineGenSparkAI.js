@@ -4,7 +4,6 @@
  * ALL Features Working Locally with Local AI Models
  */
 
-const { pipeline } = require('@xenova/transformers');
 const natural = require('natural');
 const brain = require('brain.js');
 const compromise = require('compromise');
@@ -56,10 +55,15 @@ class OfflineGenSparkAI {
       // Load local knowledge base
       await this.loadKnowledgeBase();
 
-      // Initialize local AI models (Transformers.js)
+      // Initialize local AI models (Transformers.js) - optional
       console.log('📦 Loading local AI models...');
-      this.models.textGeneration = await this.loadTextGenerationModel();
-      this.models.codeGeneration = await this.loadCodeGenerationModel();
+      try {
+        this.models.textGeneration = await this.loadTextGenerationModel();
+        this.models.codeGeneration = await this.loadCodeGenerationModel();
+      } catch (error) {
+        console.log('⚠️  Transformers.js models not available (this is OK)');
+        console.log('   Will use template-based generation');
+      }
       
       this.initialized = true;
       console.log('✅ Offline GenSpark AI initialized successfully!');
@@ -69,7 +73,7 @@ class OfflineGenSparkAI {
         console.log('🔧 DEV MODE: Enhanced debugging enabled');
       }
     } catch (error) {
-      console.error('❌ Initialization error:', error);
+      console.error('❌ Initialization error:', error.message);
       console.log('⚠️  Continuing with limited functionality...');
       this.initialized = true; // Continue anyway
     }
@@ -78,9 +82,10 @@ class OfflineGenSparkAI {
   async loadTextGenerationModel() {
     try {
       // Load lightweight text generation model
+      const { pipeline } = require('@xenova/transformers');
       return await pipeline('text2text-generation', 'Xenova/LaMini-Flan-T5-783M');
     } catch (error) {
-      console.log('⚠️  Using fallback text generation');
+      console.log('⚠️  Using template-based text generation');
       return null;
     }
   }
@@ -88,9 +93,10 @@ class OfflineGenSparkAI {
   async loadCodeGenerationModel() {
     try {
       // Load code generation model
+      const { pipeline } = require('@xenova/transformers');
       return await pipeline('text-generation', 'Xenova/codegen-350M-mono');
     } catch (error) {
-      console.log('⚠️  Using fallback code generation');
+      console.log('⚠️  Using template-based code generation');
       return null;
     }
   }
