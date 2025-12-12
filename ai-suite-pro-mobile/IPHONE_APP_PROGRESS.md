@@ -1,7 +1,7 @@
 # 📱 AI Suite Pro Mobile - Progress Update
 
 **Date:** 2025-12-12  
-**Status:** React Native app scaffolded with core navigation and chat prototype
+**Status:** Chat tab now hitting unified backend API with live REST responses
 
 ---
 
@@ -21,11 +21,11 @@
   - Tools (Reverse engineering suite)
 - Global providers configured (Redux + React Query + SafeArea)
 
-### 3. ChatGPT Tab Prototype
+### 3. ChatGPT Tab Integrated with Backend
 - Chat UI with message list, bubbles, and input bar
 - Redux state slice for chat messages
-- Pending state simulation (echo response placeholder)
-- Ready to hook into real backend
+- REST call to `/api/chat` with full history payload
+- Info/error handling surfaced inside assistant replies
 
 ### 4. Placeholder Screens for Other Tabs
 - Descriptive content showing upcoming features for each section
@@ -33,6 +33,7 @@
 - Guides the next implementation steps
 
 ### 5. Project Structure Ready for Expansion
+- Added reusable API client with 15s timeout and history payload support
 ```
 ai-suite-pro-mobile/app
 ├── App.tsx
@@ -55,7 +56,7 @@ ai-suite-pro-mobile/app
 
 ## 🎯 Next Steps
 
-1. Connect Chat tab to real backend (WebSocket streaming)
+1. Add WebSocket streaming + typing indicators to Chat tab
 2. Build GenSpark tab UI with model selector and offline downloads
 3. Implement Developer tab with live code output and file list
 4. Integrate GitHub API for repos, issues, and PRs
@@ -79,6 +80,7 @@ App renders successfully with navigation and chat prototype.
 - `@reduxjs/toolkit`, `react-redux`
 - `@tanstack/react-query`
 - `axios`
+- `@expo/vector-icons`, `expo-font`
 
 All packages installed via `npx expo install` / `npm install`.
 

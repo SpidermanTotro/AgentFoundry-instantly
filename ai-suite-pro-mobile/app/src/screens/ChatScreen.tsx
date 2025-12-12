@@ -1,5 +1,16 @@
+import axios from 'axios';
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TextInput,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
+import { sendChatMessage, type ChatHistoryItem } from '../services/api';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { addMessage, setPending } from '../store/slices/chatSlice';
 
@@ -8,24 +19,58 @@ const ChatScreen: React.FC = () => {
   const { messages, pending } = useAppSelector((state) => state.chat);
   const [input, setInput] = useState('');
 
-  const handleSend = () => {
+  const handleSend = async () => {
     const trimmed = input.trim();
-    if (!trimmed) return;
+    if (!trimmed || pending) return;
 
     dispatch(addMessage({ role: 'user', content: trimmed }));
     setInput('');
 
     dispatch(setPending(true));
-    // Simulate assistant response (placeholder)
-    setTimeout(() => {
+
+    const historyPayload: ChatHistoryItem[] = [...messages, { role: 'user', content: trimmed }].map(
+      ({ role, content }) => ({
+        role: role as ChatHistoryItem['role'],
+        content,
+      })
+    );
+
+    try {
+      const response = await sendChatMessage(trimmed, historyPayload);
+      const responseMessage = response?.message ?? 'The server returned an empty response.';
+      const infoNote = response?.info ? `\n\nℹ️ ${response.info}` : '';
       dispatch(
         addMessage({
           role: 'assistant',
-          content: `Echo: ${trimmed}\n\n(This will connect to the real AI backend soon!)`,
+          content: `${responseMessage}${infoNote}`,
         })
       );
+    } catch (error) {
+      let errorText = 'Unable to reach the AI server. Please try again.';
+
+      if (axios.isAxiosError(error)) {
+        if (error.response?.data && typeof error.response.data === 'object') {
+          const serverMessage = (error.response.data as { error?: string; message?: string }).error ??
+            (error.response.data as { error?: string; message?: string }).message;
+          if (serverMessage) {
+            errorText = serverMessage;
+          }
+        } else if (error.message) {
+          errorText = error.message;
+        }
+      } else if (error instanceof Error && error.message) {
+        errorText = error.message;
+      }
+
+      dispatch(
+        addMessage({
+          role: 'assistant',
+          content: `⚠️ ${errorText}`,
+        })
+      );
+    } finally {
       dispatch(setPending(false));
-    }, 600);
+    }
   };
 
   return (
