@@ -21,7 +21,7 @@
     "server": "node server/index.js",
     "start": "concurrently \"npm run server\" \"npm run dev\"",
     "electron": "electron .",
-    "electron:dev": "concurrently \"npm run server\" \"wait-on http://localhost:3001 && electron .\"",
+    "electron:dev": "concurrently \"npm run server\" \"node scripts/wait-for-server.js http://localhost:3001 && electron .\"",
     "electron:build": "npm run build && electron-builder",
     "electron:build:linux": "npm run build && electron-builder --linux",
     "electron:build:win": "npm run build && electron-builder --win",
