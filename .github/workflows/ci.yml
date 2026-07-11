@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Build and startup helper
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: "true"
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Check runtime script syntax
+        run: |
+          node --check electron.js
+          node --check preload.js
+          node --check server/index.js
+          node --check scripts/wait-for-server.js
+
+      - name: Build web application
+        run: npm run build
+
+      - name: Test readiness helper success path
+        shell: bash
+        run: |
+          node -e "require('node:http').createServer((_, response) => response.end('ok')).listen(3001)" &
+          server_pid=$!
+          trap 'kill "$server_pid"' EXIT
+          node scripts/wait-for-server.js http://127.0.0.1:3001
+
+      - name: Test readiness helper timeout path
+        shell: bash
+        run: |
+          if WAIT_FOR_SERVER_TIMEOUT_MS=1000 node scripts/wait-for-server.js http://127.0.0.1:3999; then
+            echo "Expected readiness helper to time out" >&2
+            exit 1
+          fi
