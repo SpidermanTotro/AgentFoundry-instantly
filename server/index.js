@@ -9,7 +9,10 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
 const http = require('http');
+const dns = require('dns').promises;
+const net = require('net');
 const { Server } = require('socket.io');
+const cheerio = require('cheerio');
 const LocalAIEngine = require('./ai-engine/LocalAIEngine');
 const PluginSystem = require('./ai-engine/PluginSystem');
 const CodeIntelligence = require('./ai-engine/CodeIntelligence');
@@ -193,6 +196,106 @@ app.get('/api/skills', async (req, res) => {
 app.get('/api/skills/export', async (req, res) => {
   await pluginSystemReady;
   res.json({ success: true, skills: await pluginSystem.exportSkills() });
+});
+
+app.post('/api/process-document', (req, res) => {
+  try {
+    const { name = 'document', type = 'text/plain', size = 0, content = '' } = req.body;
+    if (typeof content !== 'string' || !content) {
+      return res.status(400).json({ success: false, error: 'Document content is required' });
+    }
+
+    const isImage = type.startsWith('image/');
+    const text = isImage
+      ? `Image received: ${name} (${type}, ${size} bytes). OCR is not configured.`
+      : content.slice(0, 100000);
+
+    res.json({
+      success: true,
+      analysis: text,
+      metadata: { name, type, size, truncated: !isImage && content.length > 100000 },
+      mode: 'offline'
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+function isPrivateAddress(address) {
+  if (net.isIP(address) === 4) {
+    const parts = address.split('.').map(Number);
+    return parts[0] === 10
+      || parts[0] === 127
+      || (parts[0] === 169 && parts[1] === 254)
+      || (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31)
+      || (parts[0] === 192 && parts[1] === 168)
+      || parts[0] === 0;
+  }
+
+  const normalized = address.toLowerCase();
+  return normalized === '::1'
+    || normalized === '::'
+    || normalized.startsWith('fc')
+    || normalized.startsWith('fd')
+    || normalized.startsWith('fe80:');
+}
+
+async function validatePublicUrl(value) {
+  const url = new URL(value);
+  if (!['http:', 'https:'].includes(url.protocol)) {
+    throw new Error('Only HTTP and HTTPS URLs are supported');
+  }
+
+  const addresses = await dns.lookup(url.hostname, { all: true });
+  if (!addresses.length || addresses.some(({ address }) => isPrivateAddress(address))) {
+    throw new Error('Private and local network addresses are not allowed');
+  }
+  return url;
+}
+
+app.post('/api/crawl', async (req, res) => {
+  try {
+    let url = await validatePublicUrl(req.body.url);
+    let response;
+
+    for (let redirects = 0; redirects <= 3; redirects += 1) {
+      response = await fetch(url, {
+        redirect: 'manual',
+        signal: AbortSignal.timeout(10000),
+        headers: { 'User-Agent': 'AgentFoundry/1.0' }
+      });
+
+      if (![301, 302, 303, 307, 308].includes(response.status)) break;
+      const location = response.headers.get('location');
+      if (!location || redirects === 3) throw new Error('Too many redirects');
+      url = await validatePublicUrl(new URL(location, url).toString());
+    }
+
+    if (!response.ok) throw new Error(`Remote server returned HTTP ${response.status}`);
+    const contentLength = Number(response.headers.get('content-length') || 0);
+    if (contentLength > 2_000_000) throw new Error('Remote response is too large');
+
+    const html = (await response.text()).slice(0, 2_000_000);
+    const $ = cheerio.load(html);
+    $('script, style, noscript').remove();
+    res.json({
+      success: true,
+      url: url.toString(),
+      title: $('title').first().text().trim(),
+      text: $('body').text().replace(/\s+/g, ' ').trim().slice(0, 10000),
+      truncated: html.length === 2_000_000
+    });
+  } catch (error) {
+    const status = error.name === 'TimeoutError' ? 504 : 400;
+    res.status(status).json({ success: false, error: error.message });
+  }
+});
+
+app.post('/api/chatgpt2/execute', (req, res) => {
+  res.status(501).json({
+    success: false,
+    error: 'Code execution is disabled because no secure sandbox is configured'
+  });
 });
 
 // Main chat endpoint

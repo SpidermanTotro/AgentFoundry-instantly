@@ -20,32 +20,30 @@ const ChatGPT2 = () => {
       role: 'assistant',
       content: `# Welcome to ChatGPT 2.0 UNRESTRICTED! 🚀
 
-I'm your ultimate AI assistant with **ZERO RESTRICTIONS** and **ALL FEATURES**:
+I'm your self-hosted AI workspace with online and offline tools:
 
 ## 🎯 What I Can Do:
-- 💬 **Unlimited Chat** - No filters, no restrictions
-- 🌐 **Real-time Web Browsing** - Search and crawl any website
+- 💬 **Local Chat** - Connect your preferred providers with environment keys
+- 🌐 **Web Tools** - Search and crawl public websites when configured
 - 🎨 **Image Generation** - DALL-E 3, Stable Diffusion XL
 - 🎬 **Video Generation** - Create videos from text/images
 - 🎵 **Audio & Music** - TTS, voice cloning, music generation
-- 📄 **Document Processing** - PDF, DOCX, images (OCR)
-- 💻 **Code Execution** - Run code directly
-- 📁 **File System Access** - Read/write files
+- 📄 **Document Processing** - Inspect text documents locally
+- 💻 **Code Assistance** - Analyze, explain, refactor, and format code
 - 🐙 **GitHub Integration** - Manage repos, PRs, issues
 - 🧠 **Persistent Memory** - Remember across conversations
 - 🎭 **Multiple Personalities** - Different AI modes
 - 🔒 **100% Offline Mode** - Works without internet
 
-## 🔥 Unique Features ChatGPT Can't Do:
-✓ Unrestricted content generation
-✓ Direct file system access
-✓ Real-time web browsing
-✓ GitHub API integration
-✓ Multi-modal creation (image/video/audio)
-✓ Code execution without sandboxing
-✓ Complete privacy (self-hosted)
+## 🔥 Workspace Features:
+✓ Offline code intelligence
+✓ Guarded public-web crawling
+✓ Optional GitHub and AI-provider integrations
+✓ Multi-modal provider hooks (image/video/audio)
+✓ Local conversation storage
+✓ Self-hosted privacy controls
 
-**Try me!** Ask anything, generate anything, do anything! 😎`,
+**Try me!** Ask a question, upload a text file, or switch to the code editor. 😎`,
       timestamp: new Date(),
       type: 'text'
     }
@@ -150,15 +148,19 @@ I'm your ultimate AI assistant with **ZERO RESTRICTIONS** and **ALL FEATURES**:
     setIsLoading(true);
 
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-
       const response = await fetch('/api/process-document', {
         method: 'POST',
-        body: formData
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          content
+        })
       });
 
       const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Document processing failed');
       
       const aiMessage = {
         id: Date.now() + 1,
@@ -378,6 +380,7 @@ I'm your ultimate AI assistant with **ZERO RESTRICTIONS** and **ALL FEATURES**:
     });
 
     const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Web crawl failed');
     
     const aiMessage = {
       id: Date.now() + 2,
@@ -398,6 +401,7 @@ I'm your ultimate AI assistant with **ZERO RESTRICTIONS** and **ALL FEATURES**:
     });
 
     const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Code execution is unavailable');
     
     const aiMessage = {
       id: Date.now() + 1,
