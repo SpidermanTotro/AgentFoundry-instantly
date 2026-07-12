@@ -7,7 +7,7 @@ let mainWindow;
 let serverProcess;
 const isDev = process.env.NODE_ENV === 'development';
 const PORT = process.env.PORT || 3001;
-const FRONTEND_PORT = 3002;
+const FRONTEND_PORT = process.env.FRONTEND_PORT || 3000;
 
 // Auto-update configuration
 const autoUpdater = require('electron-updater').autoUpdater;
@@ -274,7 +274,9 @@ autoUpdater.on('update-downloaded', () => {
 
 // App lifecycle events
 app.on('ready', () => {
-  startServer();
+  if (!isDev) {
+    startServer();
+  }
   
   // Wait for server to start
   setTimeout(() => {

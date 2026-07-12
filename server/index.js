@@ -10,6 +10,9 @@ const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
 const http = require('http');
 const { Server } = require('socket.io');
+const LocalAIEngine = require('./ai-engine/LocalAIEngine');
+const PluginSystem = require('./ai-engine/PluginSystem');
+const CodeIntelligence = require('./ai-engine/CodeIntelligence');
 
 // Import services
 const authService = require('./services/AuthService');
@@ -26,6 +29,10 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 const server = http.createServer(app);
+const aiEngine = new LocalAIEngine();
+const pluginSystem = new PluginSystem();
+const codeIntelligence = new CodeIntelligence();
+const pluginSystemReady = pluginSystem.initialize();
 
 // Initialize Socket.IO
 const io = new Server(server, {
@@ -94,6 +101,98 @@ app.get('/api/health', (req, res) => {
       environment: process.env.NODE_ENV || 'development'
     }
   });
+});
+
+// Offline code-assistance endpoints used by the editor UI.
+app.post('/api/complete', async (req, res) => {
+  try {
+    const { code = '', language = 'javascript', cursorPosition = code.length } = req.body;
+    const suggestions = await aiEngine.generateCompletion(code, cursorPosition, language);
+    res.json({ success: true, suggestions, mode: 'offline-ai' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post('/api/analyze', (req, res) => {
+  try {
+    const { code = '', language = 'javascript' } = req.body;
+    res.json({ success: true, analysis: aiEngine.analyzeCode(code, language), mode: 'offline-ai' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post('/api/explain', (req, res) => {
+  try {
+    const { code = '', language = 'javascript' } = req.body;
+    const analysis = aiEngine.analyzeCode(code, language);
+    const explanation = [
+      `Language: ${language}`,
+      `Complexity: ${analysis.complexity.level} (${analysis.complexity.score})`,
+      `Maintainability: ${analysis.metrics.maintainabilityIndex.rating} (${analysis.metrics.maintainabilityIndex.score}/100)`,
+      `Issues: ${analysis.issues.length}`
+    ].join('\n');
+    res.json({ success: true, explanation, analysis, mode: 'offline-ai' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post('/api/refactor', async (req, res) => {
+  try {
+    await pluginSystemReady;
+    const { code = '', language = 'javascript' } = req.body;
+    const analysis = aiEngine.analyzeCode(code, language);
+    const suggestions = analysis.suggestions.map((suggestion) => ({
+      title: suggestion.title,
+      description: suggestion.description,
+      impact: suggestion.priority,
+      category: suggestion.type
+    }));
+    res.json({ success: true, suggestions, mode: 'offline-ai' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post('/api/format', async (req, res) => {
+  try {
+    const { code = '', language = 'javascript' } = req.body;
+    const formatted = await codeIntelligence.formatCode(code, language);
+    res.json({ success: true, formatted, mode: 'offline' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/api/stats', async (req, res) => {
+  await pluginSystemReady;
+  res.json({
+    success: true,
+    statistics: {
+      plugins: pluginSystem.getStatistics(),
+      learnedSkills: aiEngine.getSkills().length,
+      learningEnabled: aiEngine.learningEnabled,
+      memorySize: aiEngine.contextMemory.length,
+      uptime: process.uptime()
+    }
+  });
+});
+
+app.get('/api/skills', async (req, res) => {
+  await pluginSystemReady;
+  res.json({
+    success: true,
+    skills: pluginSystem.getRecommendedSkills('', 'all'),
+    statistics: pluginSystem.getStatistics(),
+    mode: 'offline'
+  });
+});
+
+app.get('/api/skills/export', async (req, res) => {
+  await pluginSystemReady;
+  res.json({ success: true, skills: await pluginSystem.exportSkills() });
 });
 
 // Main chat endpoint
