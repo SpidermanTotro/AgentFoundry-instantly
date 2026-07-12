@@ -1,304 +1,125 @@
-# GitHub Copilot Instructions for AgentFoundry (AI Copilot Pro)
-
-## Project Overview
-
-AgentFoundry is a complete, professional-grade AI coding suite that combines the capabilities of GitHub Copilot and GenSpark AI with 100% offline functionality. It's a full-stack web application built with React and Node.js, offering AI-powered code assistance, multi-modal AI capabilities, and self-learning features.
-
-## Architecture
-
-### Technology Stack
-
-**Frontend:**
-- React 19 with Vite for fast development
-- Monaco Editor (VS Code's editor engine)
-- Modern ES6+ JavaScript (no TypeScript)
-- CSS for styling (no CSS frameworks)
-
-**Backend:**
-- Node.js with Express.js 5.x
-- SQLite for data persistence
-- Multiple AI providers (Google Gemini, Anthropic Claude, Cohere)
-- AST-based code analysis using @babel/parser
-
-**Desktop:**
-- Electron for cross-platform desktop apps
-- Supports Windows, macOS, and Linux
-
-### Project Structure
-
-```
-/
-├── server/                    # Backend Express.js application
-│   ├── index.js              # Main server entry point
-│   └── ai-engine/            # AI processing engines
-│       ├── LocalAIEngine.js  # Offline AI (AST-based)
-│       ├── GenSparkAI.js     # Online/hybrid AI
-│       ├── CodeIntelligence.js
-│       └── PluginSystem.js
-├── src/                      # Frontend React application
-│   ├── App.jsx              # Main app component
-│   ├── App.css              # Main styles
-│   └── components/          # React components
-├── public/                  # Static assets
-├── electron.js             # Electron entry point
-├── package.json            # Dependencies and scripts
-└── vite.config.js         # Vite configuration
-```
-
-## Coding Standards and Conventions
-
-### General Guidelines
-
-1. **Language**: Use modern JavaScript (ES6+) - **NO TypeScript**
-2. **Code Style**: 
-   - Use 2-space indentation
-   - Use single quotes for strings
-   - Use camelCase for variables and functions
-   - Use PascalCase for React components and classes
-   - Add semicolons at the end of statements
-
-3. **File Naming**:
-   - React components: PascalCase with `.jsx` extension (e.g., `CodeAssistant.jsx`)
-   - Regular JS files: camelCase with `.js` extension (e.g., `localAIEngine.js`)
-   - CSS files: match component name (e.g., `CodeAssistant.css` or global `App.css`)
-
-4. **Comments**:
-   - Add JSDoc comments for functions and classes
-   - Use inline comments sparingly, only for complex logic
-   - Keep comments concise and meaningful
-
-### React Conventions
-
-1. **Component Structure**:
-   - Prefer functional components with hooks
-   - Use `useState`, `useEffect`, `useCallback`, `useMemo` as needed
-   - Avoid class components unless absolutely necessary
-
-2. **Props and State**:
-   - Destructure props in function parameters
-   - Use meaningful prop names
-   - Keep component state minimal and focused
-
-3. **Imports**:
-   - Group imports: React first, then third-party libraries, then local imports
-   - Use named imports when possible
-
-Example:
-```javascript
-import React, { useState, useEffect } from 'react';
-import { IconName } from 'react-icons/fa';
-import { helperFunction } from '../utils/helpers';
-```
-
-### Backend Conventions
-
-1. **Express Routes**:
-   - Keep routes in logical groups
-   - Use async/await for asynchronous operations
-   - Always handle errors with try-catch blocks
-
-2. **Error Handling**:
-   - Return appropriate HTTP status codes
-   - Provide meaningful error messages
-   - Log errors to console for debugging
-
-3. **API Responses**:
-   - Use consistent JSON response format
-   - Include success/error status
-   - Provide clear error messages
-
-Example:
-```javascript
-app.post('/api/endpoint', async (req, res) => {
-  try {
-    const result = await someOperation();
-    res.json({ success: true, data: result });
-  } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-```
-
-## Build and Development
-
-### Installation
-
-```bash
-npm install
-```
-
-### Development Commands
-
-- `npm run dev` - Start frontend dev server (Vite on port 5173)
-- `npm run server` - Start backend server (Express on port 3001)
-- `npm start` - Start both frontend and backend concurrently
-- `npm run build` - Build frontend for production
-- `npm run preview` - Preview production build
-
-### Desktop App Development
-
-- `npm run electron:dev` - Run desktop app in development mode
-- `npm run electron:build` - Build desktop app for current platform
-- `npm run electron:build:linux` - Build for Linux
-- `npm run electron:build:win` - Build for Windows
-- `npm run electron:build:mac` - Build for macOS
-
-### Docker
+# AgentFoundry Copilot instructions
 
-- `npm run docker:build` - Build Docker image
-- `npm run docker:run` - Start with docker-compose
-- `npm run docker:stop` - Stop docker containers
-- `npm run docker:logs` - View container logs
+## Repository scope and source of truth
 
-### Environment Variables
+AgentFoundry's active root project is a JavaScript web and Electron desktop application. The root npm project is what .github/workflows/ci.yml validates.
 
-Optional `.env` file for online AI features:
-```bash
-GOOGLE_API_KEY=your_key          # Google Gemini (optional)
-ANTHROPIC_API_KEY=your_key       # Claude 3 (optional)
-COHERE_API_KEY=your_key          # Cohere (optional)
-AI_MODE=hybrid                   # offline, online, hybrid
-PORT=3001                        # Backend port
-```
+- Work from the repository root unless the issue explicitly names a nested project.
+- Treat package.json, package-lock.json, vite.config.js, .github/workflows/ci.yml, and currently imported source code as authoritative.
+- Root status reports and feature-completion Markdown files may describe older or aspirational states. Verify claims against executable code.
+- Do not edit nested prototypes such as genspark-2.0/, genspark-ai-developer/, github-2.0/, forge-spark-mvp/, or ai-suite-pro-mobile/ unless the task specifically targets them.
+- Do not modify *.backup*, generated output, archives, dist/, dist-electron/, or node_modules/.
+- Do not add new completion/status reports unless the issue requests that documentation.
+- Trace imports before changing or documenting functionality. A module under server/ai-engine/ is not necessarily wired into the active server.
 
-**Note**: The application works fully offline without any API keys.
+## Active stack and entry points
 
-## Key Features and Modules
+- CI runtime: Node.js 22 with npm and lockfile version 3.
+- Docker currently uses Node.js 20; do not change that incidentally.
+- Frontend: React 19, JSX, Vite 7, ES modules, Monaco Editor, and plain CSS.
+- Backend: Express 5 and Socket.IO using CommonJS.
+- Desktop: Electron 39 with a restricted preload bridge.
+- Application source remains JavaScript/JSX. Do not convert it to TypeScript.
 
-### AI Modes
+Important paths:
 
-1. **Offline Mode** (Default): 100% local, AST-based code analysis
-2. **Online Mode**: Uses cloud AI providers (Gemini, Claude, Cohere)
-3. **Hybrid Mode**: Smart switching between offline and online
+- src/main.jsx and src/App.jsx: frontend entry points.
+- src/components/ChatGPT2.jsx: chat interface.
+- src/components/CodeEditor.jsx: Monaco-based coding interface.
+- server/index.js: Express and Socket.IO entry point.
+- server/routes/: active HTTP route modules.
+- server/services/: authentication and vector-memory services.
+- server/ai-engine/: AI-related modules; confirm active integration before editing.
+- electron.js and preload.js: Electron main process and renderer bridge.
+- scripts/wait-for-server.js: dependency-free readiness helper.
+- .github/workflows/ci.yml: validation source of truth.
 
-### Core Components
+## Installation and development
 
-1. **CodeAssistant** (`src/components/CodeAssistant.jsx`):
-   - Monaco editor integration
-   - Code completion and suggestions
-   - Syntax highlighting
+Use npm only. Do not use Yarn or pnpm.
 
-2. **ChatPanel** (`src/components/ChatPanel.jsx`):
-   - AI chat interface
-   - Message history
-   - Multi-turn conversations
+For CI-parity installation:
 
-3. **SkillsPanel** (`src/components/SkillsPanel.jsx`):
-   - Self-learning skills management
-   - 8 built-in refactoring skills
+~~~bash
+PUPPETEER_SKIP_DOWNLOAD=true npm ci --ignore-scripts --no-audit --no-fund
+~~~
 
-4. **StatusBar** (`src/components/StatusBar.jsx`):
-   - Real-time metrics
-   - System status indicators
+Use plain npm ci when exercising native modules or Electron packaging. Do not regenerate package-lock.json unless package.json dependencies change; commit both files together when they do.
 
-### Backend AI Engines
+Development commands:
 
-1. **LocalAIEngine.js**: 
-   - Offline code analysis
-   - AST parsing with @babel/parser
-   - No external API dependencies
+~~~bash
+npm start
+npm run server
+npm run dev
+npm run build
+npm run preview
+~~~
 
-2. **GenSparkAI.js**:
-   - Multi-provider AI integration
-   - Fallback handling
-   - Response caching
+Current development addresses:
 
-3. **CodeIntelligence.js**:
-   - Code analysis and refactoring
-   - Complexity metrics
-   - Security scanning
+- Frontend: http://localhost:3000
+- API and Socket.IO server: http://localhost:3001
+- Health check: http://localhost:3001/api/health
 
-4. **PluginSystem.js**:
-   - Self-learning skills
-   - Skill storage and retrieval
+Use relative frontend requests such as /api/chat; Vite proxies /api to port 3001.
 
-## Testing and Quality
+electron.js currently references frontend port 3002 while Vite uses 3000. Do not silently clean up that discrepancy during unrelated work. If a task changes Electron startup, reconcile every caller and configuration file and validate the complete startup path.
 
-- **Manual Testing**: Test both frontend and backend after changes
-- **No Test Suite**: Currently no automated tests - validate changes manually
-- **Browser Testing**: Test in modern browsers (Chrome, Firefox, Edge)
-- **Electron Testing**: Test desktop builds on target platforms
+Copy .env.example to .env only when optional integrations are needed. Never commit .env, tokens, credentials, or real API keys.
 
-## Dependencies
+## Required validation
 
-### Key Dependencies
+Match CI before completing a change:
 
-- `react` & `react-dom`: UI framework (v19.x)
-- `express`: Web server (v5.x)
-- `@monaco-editor/react`: Code editor
-- `@babel/parser` & `@babel/traverse`: Code analysis
-- `better-sqlite3`: Database
-- `electron`: Desktop app framework
-- `vite`: Build tool and dev server
-- AI SDKs: `@google/generative-ai`, `@anthropic-ai/sdk`, `cohere`
+~~~bash
+node --check electron.js
+node --check preload.js
+node --check server/index.js
+node --check scripts/wait-for-server.js
+npm run build
+~~~
 
-### Adding New Dependencies
+Also run node --check on every changed CommonJS script.
 
-1. Use `npm install <package>` (not yarn or pnpm)
-2. Verify compatibility with Node.js 16+
-3. Check if the package works in Electron environment if needed
-4. Update documentation if adding major dependencies
+There is currently no root unit-test or lint script. Do not run or report nonexistent npm test or npm run lint checks.
 
-## Common Tasks
+When relevant:
 
-### Adding a New React Component
+- Server or route change: start the server and check /api/health plus the affected endpoint.
+- Frontend change: run npm start and smoke-test both chat and code-editor modes.
+- Readiness-helper change: run both success and timeout scenarios from .github/workflows/ci.yml.
+- Electron or preload change: build the frontend and perform a platform-appropriate Electron smoke test.
+- If a check cannot run, state exactly what was not tested and why.
 
-1. Create file in `src/components/` with PascalCase name
-2. Use functional component with hooks
-3. Import and use in parent component
-4. Add CSS file if needed (same name as component)
+## Coding conventions
 
-### Adding a New API Endpoint
-
-1. Add route in `server/index.js`
-2. Use async/await with try-catch
-3. Return consistent JSON response format
-4. Test with both online and offline modes if applicable
-
-### Working with AI Features
-
-1. **Offline**: Changes to `server/ai-engine/LocalAIEngine.js`
-2. **Online**: Changes to `server/ai-engine/GenSparkAI.js`
-3. Always maintain fallback behavior for offline mode
-4. Test with and without API keys
-
-## Important Notes
-
-1. **Offline-First Philosophy**: All core features must work without internet
-2. **No Breaking Changes**: Maintain backward compatibility
-3. **Performance**: Keep responses under 500ms for offline operations
-4. **Privacy**: No telemetry or tracking - all data stays local
-5. **Cross-Platform**: Test changes on Windows, macOS, and Linux if modifying Electron code
-
-## Documentation Files
-
-- `README.md`: Main project documentation
-- `INSTALL.md`: Installation instructions
-- `GENSPARK_FEATURES.md`: Feature documentation
-- Various status and guide files (*.md) in root directory
-
-## Getting Help
-
-- Repository: https://github.com/SpidermanTotro/AgentFoundry-instantly
-- Issues: Create GitHub issues for bugs or feature requests
-- Main branch: `genspark_ai_developer`
-
-## When Making Changes
-
-1. **Understand Context**: Review related files before making changes
-2. **Minimal Changes**: Make the smallest change necessary
-3. **Test Thoroughly**: Test both frontend and backend
-4. **Offline Mode**: Ensure offline functionality still works
-5. **Documentation**: Update README.md or other docs if needed
-6. **No Breaking Changes**: Maintain API compatibility
-7. **Error Handling**: Always include proper error handling
-8. **Performance**: Consider impact on load times and response times
-
-## Security Considerations
-
-1. **Input Validation**: Validate all user inputs
-2. **XSS Prevention**: Sanitize HTML content (use `dompurify`, `xss`, or `sanitize-html`)
-3. **API Keys**: Never commit API keys - use environment variables
-4. **Dependencies**: Keep dependencies updated for security patches
-5. **Code Execution**: Be careful with eval() or dynamic code execution
+- Match nearby code. Most application files use two-space indentation, single quotes, and semicolons.
+- Preserve module boundaries: ES module imports in frontend/Vite files; CommonJS require and module.exports in backend, Electron, and Node scripts.
+- Use functional React components and hooks. Name components in PascalCase and keep component styles in plain CSS.
+- Preserve relative /api calls and existing request/response field names.
+- Keep Express routes focused and place reusable behavior in server/services/.
+- Validate request data, use appropriate status codes, handle async failures, and return safe user-facing errors.
+- Preserve existing REST and Socket.IO contracts unless the issue explicitly changes them.
+- Prefer small, scoped changes over broad rewrites or repository-wide formatting.
+
+## Architecture and safety constraints
+
+- Preserve the offline-first goal: basic startup and local functionality must not require an API key or network access.
+- Optional cloud-provider failures must degrade gracefully instead of preventing startup.
+- Several frontend controls currently reference endpoints that are not mounted by server/index.js. Trace client call to route to service and test it before describing a feature as implemented.
+- Do not add telemetry or transmit local files, prompts, or code without an explicit feature requirement and user-visible behavior.
+- Never log tokens, passwords, private file contents, or API keys.
+- Preserve Electron security defaults: nodeIntegration false, contextIsolation true, and narrow IPC channel allowlists in preload.js.
+- Do not expose arbitrary filesystem, shell, process, or IPC access to renderer code.
+- Avoid eval and unrestricted code execution. Validate paths, uploads, URLs, and generated commands.
+- Minimize new dependencies, especially native or Electron-sensitive packages.
+
+## Pull-request expectations
+
+- Keep the diff limited to the issue.
+- Explain the active code path affected and why the chosen files were changed.
+- List every validation command actually run and its result.
+- Identify untested platform-specific behavior.
+- Call out changes affecting offline fallback, API contracts, persisted data, Electron IPC, ports, or secrets.
+- Do not claim a feature is complete or production-ready without executable evidence.
