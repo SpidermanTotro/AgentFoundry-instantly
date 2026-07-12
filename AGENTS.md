@@ -12,7 +12,7 @@ This is the **core principle** of the entire project. Every feature must:
 - Maintain full privacy (no telemetry, no tracking)
 
 ### Zero Configuration
-- Works out of the box with `npm install && npm start`
+- Works out of the box with `npm ci && npm start`
 - No mandatory environment variables
 - Sensible defaults for everything
 - Optional enhancements via `.env` file
@@ -27,20 +27,22 @@ This is the **core principle** of the entire project. Every feature must:
 
 ### Making Changes
 
-1. **Understand First**: Read related code before making changes
-2. **Test Offline Mode**: Always verify offline functionality works
-3. **Test With/Without API Keys**: Features should degrade gracefully
-4. **Check All Three Modes**: Test offline, online, and hybrid modes
-5. **Manual Testing**: No automated test suite - test manually thoroughly
+1. **Understand First**: Read the active code path and current configuration before changing it
+2. **Match CI**: Run syntax checks and the Vite build from `.github/workflows/ci.yml`
+3. **Test Offline Mode**: Verify offline behavior when the affected feature has an offline path
+4. **Test Provider Fallbacks**: Test with and without API keys when changing provider integration
+5. **Target Manual Testing**: Smoke-test only the frontend, backend, or Electron paths affected by the change
 
 ### Testing Checklist
 
 Before considering any change complete:
-- [ ] Frontend loads without errors
-- [ ] Backend starts successfully
-- [ ] Offline mode works (disconnect internet)
-- [ ] Online mode works (with API keys)
-- [ ] Hybrid mode switches correctly
+- [ ] CI-equivalent syntax checks pass for changed CommonJS files
+- [ ] `npm run build` succeeds
+- [ ] Frontend loads without errors when frontend behavior changed
+- [ ] Backend starts successfully when backend behavior changed
+- [ ] Offline fallback works when the change affects optional online features
+- [ ] Configured provider path works when provider integration changed
+- [ ] Provider failure degrades gracefully when fallback logic changed
 - [ ] No console errors
 - [ ] Performance is acceptable (<500ms offline)
 - [ ] UI is responsive
@@ -89,7 +91,7 @@ Before considering any change complete:
 5. **Adding Heavy Dependencies**
    - Keep bundle size reasonable
    - Verify Electron compatibility
-   - Check Node.js 16+ compatibility
+   - Match Node.js 22 used by CI; preserve Docker's current Node.js 20 compatibility when relevant
 
 6. **Removing Error Handling**
    - Every async operation needs try-catch
@@ -149,12 +151,14 @@ Before considering any change complete:
 - Built-in IntelliSense
 - Proven and reliable
 
-### Why No Test Suite?
+### Current Validation
 
-- Pragmatic choice for this project
-- Manual testing is thorough
-- Focus on features over testing infrastructure
-- Tests may be added in future
+- GitHub Actions runs on Node.js 22
+- CI installs from the committed npm lockfile with `npm ci`
+- CI checks runtime script syntax and builds the Vite application
+- CI tests both success and timeout paths of `scripts/wait-for-server.js`
+- There is currently no root unit-test or lint script; do not report nonexistent checks
+- Add focused automated tests when a change introduces logic that can be tested reliably
 
 ## Security Mindset
 
@@ -225,10 +229,10 @@ Before considering any change complete:
 ## Getting Help
 
 When stuck:
-1. Read the existing code
-2. Check documentation files (README, INSTALL, GENSPARK_FEATURES)
-3. Look at similar implementations
-4. Test in isolation
+1. Read the imported source and current configuration
+2. Check `.github/copilot-instructions.md` and matching path-specific instructions
+3. Treat `package.json`, `package-lock.json`, `vite.config.js`, and CI as authoritative when prose is stale
+4. Look at similar active implementations and test in isolation
 5. Ask specific questions in issues
 
 ## Remember
@@ -241,4 +245,4 @@ When stuck:
 
 ---
 
-*This project combines the power of GitHub Copilot and GenSpark AI with complete offline capability. Keep that vision alive in every change you make.*
+*Preserve the project's offline-first goal, but verify implemented behavior against the active code path before making completion claims.*
