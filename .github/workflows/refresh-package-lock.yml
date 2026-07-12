@@ -3,6 +3,8 @@ name: Refresh package lock
 on:
   push:
     branches: [agent/regenerate-package-lock]
+  pull_request:
+    branches: [main]
     paths:
       - package.json
       - package-lock.json
