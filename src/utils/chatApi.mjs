@@ -1,9 +1,15 @@
+/** Send a JSON request and preserve the chat API's safe response contract. */
 async function requestJson(path, payload, fallbackMessage, fetchImpl = globalThis.fetch) {
-  const response = await fetchImpl(path, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  });
+  let response;
+  try {
+    response = await fetchImpl(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+  } catch {
+    throw new Error(fallbackMessage);
+  }
 
   let data = {};
   try {
@@ -12,10 +18,10 @@ async function requestJson(path, payload, fallbackMessage, fetchImpl = globalThi
     if (response.ok) throw new Error('The server returned an invalid response');
   }
 
-  if (!response.ok) {
+  if (!response.ok || data.success === false) {
     throw new Error(data.error || fallbackMessage);
   }
-  return data;
+  return data.success === true && Object.hasOwn(data, 'data') ? data.data : data;
 }
 
 export function processDocumentRequest(file, content, fetchImpl) {
