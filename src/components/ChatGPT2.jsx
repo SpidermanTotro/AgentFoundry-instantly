@@ -11,6 +11,7 @@ import {
   FaEdit, FaCodeBranch, FaUpload, FaFileExport
 } from 'react-icons/fa';
 import conversationManager from '../utils/ConversationManager';
+import { crawlUrl, executeCodeRequest, processDocumentRequest } from '../utils/chatApi.mjs';
 import './ChatGPT2.css';
 
 const ChatGPT2 = () => {
@@ -18,7 +19,7 @@ const ChatGPT2 = () => {
     {
       id: 1,
       role: 'assistant',
-      content: `# Welcome to ChatGPT 2.0 UNRESTRICTED! 🚀
+      content: `# Welcome to AgentFoundry Instantly! 🚀
 
 I'm your self-hosted AI workspace with online and offline tools:
 
@@ -54,7 +55,7 @@ I'm your self-hosted AI workspace with online and offline tools:
   const [mode, setMode] = useState('chat');
   const [showSidebar, setShowSidebar] = useState(true);
   const [conversations, setConversations] = useState([
-    { id: 1, title: 'ChatGPT 2.0 UNRESTRICTED', date: new Date() }
+    { id: 1, title: 'AgentFoundry Instantly', date: new Date() }
   ]);
   const [currentConversationId, setCurrentConversationId] = useState(1);
   const [isRecording, setIsRecording] = useState(false);
@@ -148,19 +149,7 @@ I'm your self-hosted AI workspace with online and offline tools:
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/process-document', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: file.name,
-          type: file.type,
-          size: file.size,
-          content
-        })
-      });
-
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Document processing failed');
+      const data = await processDocumentRequest(file, content);
       
       const aiMessage = {
         id: Date.now() + 1,
@@ -173,6 +162,14 @@ I'm your self-hosted AI workspace with online and offline tools:
       setMessages(prev => [...prev, aiMessage]);
     } catch (error) {
       console.error('Error processing document:', error);
+      const errorMessage = {
+        id: Date.now() + 1,
+        role: 'assistant',
+        content: `❌ Error processing document: ${error.message}`,
+        timestamp: new Date(),
+        type: 'error'
+      };
+      setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }
@@ -373,14 +370,13 @@ I'm your self-hosted AI workspace with online and offline tools:
     };
     setMessages(prev => [...prev, loadingMsg]);
 
-    const response = await fetch('/api/crawl', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url })
-    });
-
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'Web crawl failed');
+    let data;
+    try {
+      data = await crawlUrl(url);
+    } catch (error) {
+      setMessages(prev => prev.filter(message => message.id !== loadingMsg.id));
+      throw error;
+    }
     
     const aiMessage = {
       id: Date.now() + 2,
@@ -394,14 +390,7 @@ I'm your self-hosted AI workspace with online and offline tools:
   };
 
   const executeCode = async (code) => {
-    const response = await fetch('/api/chatgpt2/execute', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code })
-    });
-
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'Code execution is unavailable');
+    const data = await executeCodeRequest(code);
     
     const aiMessage = {
       id: Date.now() + 1,
@@ -732,7 +721,7 @@ I'm your self-hosted AI workspace with online and offline tools:
           <div className="header-title">
             <FaRobot className="header-icon" />
             <div>
-              <h2>ChatGPT 2.0 UNRESTRICTED</h2>
+              <h2>AgentFoundry Instantly</h2>
               <span className="header-subtitle">
                 {mode === 'chat' && '💬 Chat Mode'}
                 {mode === 'code' && '💻 Code Mode'}
@@ -793,6 +782,12 @@ I'm your self-hosted AI workspace with online and offline tools:
                   </ReactMarkdown>
                 )}
                 
+                {message.type === 'error' && (
+                  <div className="message-error" role="alert">
+                    {message.content}
+                  </div>
+                )}
+
                 {message.type === 'image' && (
                   <div className="message-media">
                     <img src={message.imageUrl} alt="Generated" />
@@ -901,7 +896,7 @@ I'm your self-hosted AI workspace with online and offline tools:
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Message ChatGPT 2.0... (try /image, /video, /audio, /search)"
+              placeholder="Message AgentFoundry... (try /image, /video, /audio, /search)"
               className="chat-input"
               rows="1"
             />
