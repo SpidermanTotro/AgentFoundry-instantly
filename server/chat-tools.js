@@ -1,18 +1,22 @@
 'use strict';
 
 const dns = require('node:dns').promises;
+const http = require('node:http');
+const https = require('node:https');
 const net = require('node:net');
 
 const DOCUMENT_TEXT_LIMIT = 100_000;
 const WEB_RESPONSE_LIMIT = 2_000_000;
 const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
 
+/** Create a client-safe HTTP 400 error. */
 function badRequest(message) {
   const error = new Error(message);
   error.statusCode = 400;
   return error;
 }
 
+/** Analyze a local document payload without sending its contents elsewhere. */
 function analyzeDocument(payload = {}) {
   if (!payload || typeof payload !== 'object') {
     throw badRequest('Document payload is required');
@@ -49,6 +53,7 @@ function analyzeDocument(payload = {}) {
   };
 }
 
+/** Return true when an address is invalid, private, local, or reserved. */
 function isPrivateAddress(address) {
   if (typeof address !== 'string') return true;
 
@@ -84,7 +89,17 @@ function isPrivateAddress(address) {
   return true;
 }
 
-async function validatePublicUrl(value, options = {}) {
+/** Normalize a URL hostname for local-host and IP checks. */
+function normalizeHostname(hostname) {
+  const normalized = hostname.toLowerCase();
+  if (normalized.startsWith('[') && normalized.endsWith(']')) {
+    return normalized.slice(1, -1);
+  }
+  return normalized.replace(/\.$/, '');
+}
+
+/** Validate a public URL and select one already-vetted DNS address. */
+async function resolvePublicUrl(value, options = {}) {
   let url;
   try {
     url = new URL(value);
@@ -99,43 +114,119 @@ async function validatePublicUrl(value, options = {}) {
     throw badRequest('URLs containing credentials are not allowed');
   }
 
-  const hostname = url.hostname.toLowerCase();
+  const hostname = normalizeHostname(url.hostname);
   if (hostname === 'localhost' || hostname.endsWith('.localhost')) {
     throw badRequest('Private and local network addresses are not allowed');
   }
 
   const lookup = options.lookup || dns.lookup;
-  const addresses = await lookup(hostname, { all: true });
+  const addresses = await lookup(hostname, { all: true, verbatim: true });
   if (!Array.isArray(addresses)
       || addresses.length === 0
-      || addresses.some(({ address }) => isPrivateAddress(address))) {
+      || addresses.some((entry) => !entry || isPrivateAddress(entry.address))) {
     throw badRequest('Private and local network addresses are not allowed');
   }
 
+  const selected = addresses[0];
+  return {
+    url,
+    hostname,
+    address: selected.address,
+    family: Number(selected.family) || net.isIP(selected.address)
+  };
+}
+
+/** Validate a URL while preserving the original URL-returning API. */
+async function validatePublicUrl(value, options = {}) {
+  const { url } = await resolvePublicUrl(value, options);
   return url;
 }
 
+/** Build a Node lookup callback that can return only one vetted address. */
+function createPinnedLookup(address, family) {
+  return (_hostname, options, callback) => {
+    if (typeof options === 'function') {
+      callback = options;
+      options = {};
+    }
+    if (options && options.all) {
+      callback(null, [{ address, family }]);
+      return;
+    }
+    callback(null, address, family);
+  };
+}
+
+/** Perform one HTTP request with DNS pinned to a previously vetted address. */
+function requestPinned(url, options = {}) {
+  if (typeof options.lookup !== 'function') {
+    return Promise.reject(new Error('A pinned DNS lookup is required'));
+  }
+
+  const client = url.protocol === 'https:' ? https : http;
+  const headers = { ...options.headers };
+  const hasHostHeader = Object.keys(headers).some((name) => name.toLowerCase() === 'host');
+  if (!hasHostHeader) headers.Host = url.host;
+
+  return new Promise((resolve, reject) => {
+    const request = client.request(url, {
+      method: 'GET',
+      headers,
+      lookup: options.lookup,
+      servername: options.servername,
+      signal: options.signal
+    }, (response) => {
+      resolve({
+        status: response.statusCode || 0,
+        ok: response.statusCode >= 200 && response.statusCode < 300,
+        headers: {
+          get(name) {
+            const value = response.headers[name.toLowerCase()];
+            if (Array.isArray(value)) return value.join(', ');
+            return value === undefined ? null : String(value);
+          }
+        },
+        body: response
+      });
+    });
+
+    request.once('error', reject);
+    request.end();
+  });
+}
+
+/** Read a Web or Node response stream without exceeding the byte limit. */
 async function readResponseText(response, maxBytes) {
   const declaredLength = Number(response.headers.get('content-length') || 0);
   if (Number.isFinite(declaredLength) && declaredLength > maxBytes) {
     throw badRequest('Remote response is too large');
   }
 
-  if (!response.body || typeof response.body.getReader !== 'function') {
-    const buffer = Buffer.from(await response.text());
-    return {
-      text: buffer.subarray(0, maxBytes).toString('utf8'),
-      truncated: buffer.length > maxBytes
+  let iterator;
+  let cancel;
+  if (response.body && typeof response.body.getReader === 'function') {
+    const reader = response.body.getReader();
+    iterator = { next: () => reader.read() };
+    cancel = () => reader.cancel();
+  } else if (response.body && typeof response.body[Symbol.asyncIterator] === 'function') {
+    iterator = response.body[Symbol.asyncIterator]();
+    cancel = () => {
+      if (typeof response.body.destroy === 'function') {
+        response.body.destroy();
+        return undefined;
+      }
+      return typeof iterator.return === 'function' ? iterator.return() : undefined;
     };
+  } else {
+    throw badRequest('Remote response cannot be safely streamed');
   }
 
-  const reader = response.body.getReader();
   const chunks = [];
   let bytesRead = 0;
   let truncated = false;
 
   while (true) {
-    const { done, value } = await reader.read();
+    const { done, value } = await iterator.next();
     if (done) break;
 
     const chunk = Buffer.from(value);
@@ -144,7 +235,7 @@ async function readResponseText(response, maxBytes) {
       if (remaining > 0) chunks.push(chunk.subarray(0, remaining));
       truncated = true;
       try {
-        await reader.cancel();
+        await cancel();
       } catch {
         // The size cap has already been enforced; cancellation is best effort.
       }
@@ -158,26 +249,31 @@ async function readResponseText(response, maxBytes) {
   return { text: Buffer.concat(chunks).toString('utf8'), truncated };
 }
 
+/** Fetch bounded public HTML while revalidating and pinning every redirect. */
 async function fetchPublicHtml(value, options = {}) {
   const lookup = options.lookup || dns.lookup;
-  const fetchImpl = options.fetchImpl || globalThis.fetch;
+  const requestImpl = options.fetchImpl || requestPinned;
   const timeoutMs = options.timeoutMs || 10_000;
   const maxBytes = options.maxBytes || WEB_RESPONSE_LIMIT;
   const maxRedirects = options.maxRedirects ?? 3;
   const makeSignal = options.makeSignal || ((milliseconds) => AbortSignal.timeout(milliseconds));
 
-  if (typeof fetchImpl !== 'function') {
-    throw new Error('Fetch is not available');
+  if (typeof requestImpl !== 'function') {
+    throw new Error('HTTP transport is not available');
   }
 
-  let url = await validatePublicUrl(value, { lookup });
+  let target = await resolvePublicUrl(value, { lookup });
   let response;
 
   for (let redirects = 0; ; redirects += 1) {
-    response = await fetchImpl(url, {
+    response = await requestImpl(target.url, {
       redirect: 'manual',
       signal: makeSignal(timeoutMs),
-      headers: { 'User-Agent': 'AgentFoundry/1.0' }
+      headers: { 'User-Agent': 'AgentFoundry/1.0' },
+      lookup: createPinnedLookup(target.address, target.family),
+      address: target.address,
+      family: target.family,
+      servername: net.isIP(target.hostname) ? undefined : target.hostname
     });
 
     if (!REDIRECT_STATUSES.has(response.status)) break;
@@ -185,7 +281,7 @@ async function fetchPublicHtml(value, options = {}) {
     if (!location || redirects >= maxRedirects) {
       throw badRequest('Too many redirects');
     }
-    url = await validatePublicUrl(new URL(location, url).toString(), { lookup });
+    target = await resolvePublicUrl(new URL(location, target.url).toString(), { lookup });
   }
 
   if (!response.ok) {
@@ -193,15 +289,18 @@ async function fetchPublicHtml(value, options = {}) {
   }
 
   const { text: html, truncated } = await readResponseText(response, maxBytes);
-  return { url: url.toString(), html, truncated };
+  return { url: target.url.toString(), html, truncated };
 }
 
 module.exports = {
   DOCUMENT_TEXT_LIMIT,
   WEB_RESPONSE_LIMIT,
   analyzeDocument,
+  createPinnedLookup,
   fetchPublicHtml,
   isPrivateAddress,
   readResponseText,
+  requestPinned,
+  resolvePublicUrl,
   validatePublicUrl
 };
