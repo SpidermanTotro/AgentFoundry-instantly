@@ -2,7 +2,7 @@
   "name": "copilot-pro",
   "productName": "Copilot Pro",
   "version": "1.0.0",
-  "description": "Advanced Offline AI Copilot Pro - Professional Grade AI Coding Assistant",
+  "description": "Local-first AI coding workspace with guarded web and document tools",
   "main": "electron.js",
   "homepage": "https://github.com/SpidermanTotro/AgentFoundry-instantly",
   "author": {
@@ -30,7 +30,8 @@
     "docker:build": "docker build -t copilot-pro:latest .",
     "docker:run": "docker-compose up -d",
     "docker:stop": "docker-compose down",
-    "docker:logs": "docker-compose logs -f"
+    "docker:logs": "docker-compose logs -f",
+    "test": "node --test test/*.test.js test/*.test.mjs"
   },
   "build": {
     "appId": "com.copilotpro.app",
@@ -73,7 +74,7 @@
       "maintainer": "Copilot Pro Team <support@copilotpro.dev>",
       "vendor": "Copilot Pro",
       "synopsis": "Advanced Offline AI Coding Assistant",
-      "description": "ChatGPT 2.0 UNRESTRICTED - Professional-grade AI coding assistant with zero restrictions. Features include unlimited chat, web browsing, multi-modal AI (image/video/audio generation), code execution, file system access, and complete offline mode."
+      "description": "Self-hosted AI coding workspace with offline code assistance, guarded public-web crawling, local document inspection, and optional provider integrations."
     },
     "win": {
       "target": [
