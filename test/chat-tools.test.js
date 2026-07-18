@@ -2,12 +2,18 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const { EventEmitter } = require('node:events');
+const http = require('node:http');
+const { Readable } = require('node:stream');
 
 const {
   DOCUMENT_TEXT_LIMIT,
   analyzeDocument,
+  createPinnedLookup,
   fetchPublicHtml,
   isPrivateAddress,
+  readResponseText,
+  requestPinned,
   validatePublicUrl
 } = require('../server/chat-tools');
 
@@ -130,6 +136,73 @@ test('fetchPublicHtml revalidates redirect destinations before following them', 
   assert.equal(fetchCalls, 1);
 });
 
+test('fetchPublicHtml pins the validated DNS answer for the transport', async () => {
+  let resolverCalls = 0;
+  let connectedAddress;
+  const lookup = async () => {
+    resolverCalls += 1;
+    return resolverCalls === 1
+      ? [{ address: '93.184.216.34', family: 4 }]
+      : [{ address: '127.0.0.1', family: 4 }];
+  };
+  const fetchImpl = async (url, options) => {
+    connectedAddress = await new Promise((resolve, reject) => {
+      options.lookup(url.hostname, {}, (error, address, family) => {
+        if (error) reject(error);
+        else resolve({ address, family });
+      });
+    });
+    return new Response('<html><body>safe</body></html>', { status: 200 });
+  };
+
+  await fetchPublicHtml('https://example.com', {
+    lookup,
+    fetchImpl,
+    makeSignal: noTimeout
+  });
+
+  assert.equal(resolverCalls, 1);
+  assert.deepEqual(connectedAddress, { address: '93.184.216.34', family: 4 });
+});
+
+test('requestPinned gives the transport only the pinned lookup and original Host', async (t) => {
+  const originalRequest = http.request;
+  let requestUrl;
+  let requestOptions;
+  http.request = (url, options, onResponse) => {
+    requestUrl = url;
+    requestOptions = options;
+    const request = new EventEmitter();
+    request.end = () => {
+      const response = Readable.from([Buffer.from('pinned response')]);
+      response.statusCode = 200;
+      response.headers = { 'content-length': '15' };
+      queueMicrotask(() => onResponse(response));
+    };
+    return request;
+  };
+  t.after(() => {
+    http.request = originalRequest;
+  });
+
+  const response = await requestPinned(new URL('http://safe.example:8080/path'), {
+    lookup: createPinnedLookup('93.184.216.34', 4)
+  });
+  const result = await readResponseText(response, 100);
+  const pinned = await new Promise((resolve, reject) => {
+    requestOptions.lookup('safe.example', {}, (error, address, family) => {
+      if (error) reject(error);
+      else resolve({ address, family });
+    });
+  });
+
+  assert.equal(requestUrl.hostname, 'safe.example');
+  assert.equal(requestOptions.headers.Host, 'safe.example:8080');
+  assert.deepEqual(pinned, { address: '93.184.216.34', family: 4 });
+  assert.equal(result.text, 'pinned response');
+  assert.equal(result.truncated, false);
+});
+
 test('fetchPublicHtml enforces the redirect limit', async () => {
   let fetchCalls = 0;
   const fetchImpl = async () => {
@@ -172,6 +245,48 @@ test('fetchPublicHtml caps streamed responses when content-length is absent', as
 
   assert.equal(result.html, 'abcde');
   assert.equal(result.truncated, true);
+});
+
+test('fetchPublicHtml caps Node streams without buffering the whole body', async () => {
+  const fetchImpl = async () => ({
+    status: 200,
+    ok: true,
+    headers: { get: () => null },
+    body: Readable.from([Buffer.from('abc'), Buffer.from('def')])
+  });
+  const result = await fetchPublicHtml('https://example.com', {
+    lookup: publicLookup,
+    fetchImpl,
+    maxBytes: 5,
+    makeSignal: noTimeout
+  });
+
+  assert.equal(result.html, 'abcde');
+  assert.equal(result.truncated, true);
+});
+
+test('fetchPublicHtml fails closed when a response cannot be streamed safely', async () => {
+  let textCalled = false;
+  const fetchImpl = async () => ({
+    status: 200,
+    ok: true,
+    headers: { get: () => null },
+    body: null,
+    text: async () => {
+      textCalled = true;
+      return 'unbounded';
+    }
+  });
+
+  await assert.rejects(
+    fetchPublicHtml('https://example.com', {
+      lookup: publicLookup,
+      fetchImpl,
+      makeSignal: noTimeout
+    }),
+    /cannot be safely streamed/
+  );
+  assert.equal(textCalled, false);
 });
 
 test('fetchPublicHtml preserves timeout errors for the HTTP route', async () => {
