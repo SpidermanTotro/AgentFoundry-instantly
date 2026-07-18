@@ -20,7 +20,7 @@ test('processDocumentRequest sends only the expected JSON document fields', asyn
   let captured;
   const fetchImpl = async (path, options) => {
     captured = { path, options };
-    return jsonResponse({ success: true, analysis: 'offline result' });
+    return jsonResponse({ success: true, data: { analysis: 'offline result' } });
   };
 
   const result = await processDocumentRequest({
@@ -76,5 +76,28 @@ test('requestJson uses its safe fallback for non-JSON errors', async () => {
   await assert.rejects(
     requestJson('/api/test', {}, 'Request failed safely', fetchImpl),
     /Request failed safely/
+  );
+});
+
+test('requestJson uses its safe fallback for network failures', async () => {
+  const fetchImpl = async () => {
+    throw new TypeError('Failed to fetch');
+  };
+
+  await assert.rejects(
+    requestJson('/api/test', {}, 'Request failed safely', fetchImpl),
+    /^Error: Request failed safely$/
+  );
+});
+
+test('requestJson unwraps the successful API data envelope', async () => {
+  const fetchImpl = async () => jsonResponse({
+    success: true,
+    data: { value: 'kept stable for the UI' }
+  });
+
+  assert.deepEqual(
+    await requestJson('/api/test', {}, 'Request failed safely', fetchImpl),
+    { value: 'kept stable for the UI' }
   );
 });
