@@ -386,7 +386,9 @@ I'm your self-hosted AI workspace with online and offline tools:
       type: 'text'
     };
     
-    setMessages(prev => [...prev.slice(0, -1), aiMessage]);
+    setMessages(prev => prev.map(message =>
+      message.id === loadingMsg.id ? aiMessage : message
+    ));
   };
 
   const executeCode = async (code) => {
