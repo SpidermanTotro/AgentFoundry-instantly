@@ -39,7 +39,11 @@ jobs:
           node --check electron.js
           node --check preload.js
           node --check server/index.js
+          node --check server/chat-tools.js
           node --check scripts/wait-for-server.js
+
+      - name: Test guarded chat tools
+        run: npm test
 
       - name: Build web application
         run: npm run build
