@@ -199,7 +199,7 @@ app.get('/api/skills/export', async (req, res) => {
 
 app.post('/api/process-document', (req, res) => {
   try {
-    res.json({ success: true, ...analyzeDocument(req.body) });
+    res.json({ success: true, data: analyzeDocument(req.body) });
   } catch (error) {
     res.status(error.statusCode || 500).json({ success: false, error: error.message });
   }
@@ -212,10 +212,12 @@ app.post('/api/crawl', async (req, res) => {
     $('script, style, noscript').remove();
     res.json({
       success: true,
-      url,
-      title: $('title').first().text().trim(),
-      text: $('body').text().replace(/\s+/g, ' ').trim().slice(0, 10000),
-      truncated
+      data: {
+        url,
+        title: $('title').first().text().trim(),
+        text: $('body').text().replace(/\s+/g, ' ').trim().slice(0, 10000),
+        truncated
+      }
     });
   } catch (error) {
     const status = ['TimeoutError', 'AbortError'].includes(error.name)
